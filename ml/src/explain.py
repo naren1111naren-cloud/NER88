@@ -90,5 +90,5 @@ def explain_risk(prediction_result):
         "primary_reasons": reasons,
         "recommended_action": recommended_action,
         "feature_importance_weights": importances,
-        "explanation_type": "SHAP_PROXIMAL_FEATURE_WEIGHTS"
+        "explanation_type": "DOMAIN_RULE_HEURISTIC_WEIGHTS"
     }
