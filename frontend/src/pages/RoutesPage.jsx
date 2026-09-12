@@ -115,16 +115,25 @@ export const RoutesPage = () => {
         <div>
           <h1 className="text-lg font-bold text-[#1F2937] flex items-center gap-2">
             <Compass className="w-5 h-5 text-purple-600" />
-            Corridor Route Optimization
+            Corridor Candidate Evaluation & Ranking
           </h1>
           <p className="text-xs text-[#6B7280] mt-0.5 font-normal">
-            Evaluates candidate corridors using travel time, live Open-Meteo weather conditions, bridge clearances, and route resilience.
+            Multi-attribute ranking across pre-defined candidate corridors (Route A/B/C) using travel time, live Open-Meteo weather conditions, bridge load limits, and corridor resilience.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs font-mono font-bold px-3 py-1.5 rounded-xl bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5" /> Multi-Attribute Model v2.0
+            <Sparkles className="w-3.5 h-3.5" /> Multi-Attribute Ranking
           </span>
+        </div>
+      </div>
+
+      {/* Synthetic Dataset Disclaimer Banner */}
+      <div className="p-3.5 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-900 flex items-start gap-2.5 text-xs">
+        <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+        <div>
+          <span className="font-bold">Model Training Disclaimer: </span>
+          The route risk scoring model is trained on a synthetic baseline dataset (500 generated corridor hazard rows) for demo purposes, pending multi-year historical telemetry aggregation. Graph-based OSRM routing is a documented roadmap enhancement.
         </div>
       </div>
 
