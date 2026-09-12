@@ -15,8 +15,15 @@ class Settings(BaseSettings):
 
     SECRET_KEY: str = os.getenv(
         "SECRET_KEY",
-        "link-x8-super-secret-sih-2026-hackathon-key-32bytes!"
+        ""
     )
+
+    def __init__(self, **values):
+        super().__init__(**values)
+        if not self.SECRET_KEY:
+            if self.ENVIRONMENT.lower() == "production":
+                raise ValueError("SECRET_KEY environment variable is required in production.")
+            self.SECRET_KEY = "link-x8-dev-secret-key-32bytes-long-min!"
 
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24
