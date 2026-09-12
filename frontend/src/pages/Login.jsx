@@ -330,33 +330,8 @@ export const Login = () => {
             </p>
           </div>
 
-          {/* Tab switcher */}
-          <div className="flex bg-[#F0EFF8] rounded-xl p-1 mb-6 border border-[#E5E7EB]" role="tablist">
-            {[
-              { id: 'mobile', icon: Phone, label: 'Mobile' },
-              { id: 'email', icon: Mail, label: 'Email' },
-            ].map(({ id, icon: Icon, label }) => (
-              <button
-                key={id}
-                role="tab"
-                id={`tab-${id}`}
-                aria-selected={tab === id}
-                onClick={() => { setTab(id); setError(''); setOtpStep(false); setOtp(''); }}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-all duration-200 ${
-                  tab === id
-                    ? 'bg-white text-[#6D28D9] shadow-sm border border-[#E5E7EB]'
-                    : 'text-[#6B7280] hover:text-[#1F2937]'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {label}
-              </button>
-            ))}
-          </div>
-
           {/* ── EMAIL FORM ── */}
-          {tab === 'email' && (
-            <form onSubmit={handleEmailSubmit} className="space-y-4" noValidate>
+          <form onSubmit={handleEmailSubmit} className="space-y-4" noValidate>
               <div>
                 <label htmlFor="login-email" className="text-xs font-bold text-[#1F2937] block mb-1.5">
                   Email Address
@@ -422,102 +397,6 @@ export const Login = () => {
                 )}
               </button>
             </form>
-          )}
-
-          {/* ── MOBILE FORM ── */}
-          {tab === 'mobile' && !otpStep && (
-            <form onSubmit={handleSendOtp} className="space-y-4" noValidate>
-              <div>
-                <label htmlFor="login-mobile" className="text-xs font-bold text-[#1F2937] block mb-1.5">
-                  Mobile Number
-                </label>
-                <div className="relative flex">
-                  <div className="flex items-center gap-1.5 px-3 bg-[#F0EFF8] border border-r-0 border-[#E5E7EB] rounded-l-xl text-xs font-bold text-[#1F2937]">
-                    <span className="text-base">🇮🇳</span>
-                    <span>+91</span>
-                  </div>
-                  <input
-                    id="login-mobile"
-                    type="tel"
-                    value={mobile}
-                    onChange={e => { setMobile(e.target.value.replace(/\D/g, '').slice(0, 10)); setError(''); }}
-                    placeholder="98XXXXXXXX"
-                    autoComplete="tel"
-                    className="flex-1 bg-[#F7F7FB] border border-[#E5E7EB] rounded-r-xl pl-3 pr-4 py-2.5 text-sm text-[#1F2937] placeholder-[#9CA3AF] focus:outline-none focus:border-[#8B5CF6] focus:ring-2 focus:ring-[#8B5CF6]/10 transition-all duration-150"
-                  />
-                </div>
-              </div>
-
-              {error && (
-                <div className="flex items-center gap-2 text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2.5 text-xs font-medium">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  {error}
-                </div>
-              )}
-
-              <button
-                id="login-send-otp"
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-[#6D28D9] via-[#8B5CF6] to-[#14B8A6] hover:opacity-90 active:scale-[0.98] text-white font-extrabold text-sm shadow-md transition-all duration-150 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Sending OTP…</>
-                ) : (
-                  <>Send OTP <ArrowRight className="w-4 h-4" /></>
-                )}
-              </button>
-            </form>
-          )}
-
-          {/* ── OTP VERIFICATION STEP ── */}
-          {tab === 'mobile' && otpStep && (
-            <form onSubmit={handleVerifyOtp} className="space-y-5" noValidate>
-              <div className="bg-[#F0EFF8] border border-[#E5E7EB] rounded-xl px-4 py-3 text-xs text-[#1F2937]">
-                <div className="font-bold mb-0.5">OTP sent to +91 {mobile}</div>
-                <div className="text-[#6B7280]">
-                  Enter the 6-digit code below.{' '}
-                  <button type="button" onClick={() => { setOtpStep(false); setOtp(''); setError(''); }} className="text-[#8B5CF6] font-bold hover:underline">Change number</button>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-[#1F2937] block mb-3 text-center">Enter OTP</label>
-                <OTPInput value={otp} onChange={setOtp} />
-                {/* Demo hint */}
-                <p className="text-center text-[10px] text-[#9CA3AF] mt-2">
-                  Demo mode: enter any 6 digits to continue
-                </p>
-              </div>
-
-              {error && (
-                <div className="flex items-center gap-2 text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2.5 text-xs font-medium">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  {error}
-                </div>
-              )}
-
-              {success && (
-                <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2.5 text-xs font-medium">
-                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-                  Verified. Redirecting…
-                </div>
-              )}
-
-              <button
-                id="login-verify-otp"
-                type="submit"
-                disabled={loading || success || otp.length !== 6}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-[#6D28D9] via-[#8B5CF6] to-[#14B8A6] hover:opacity-90 active:scale-[0.98] text-white font-extrabold text-sm shadow-md transition-all duration-150 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Verifying…</>
-                ) : (
-                  <>Verify &amp; Continue <ArrowRight className="w-4 h-4" /></>
-                )}
-              </button>
-            </form>
-          )}
 
           {/* ── Divider ── */}
           <div className="flex items-center gap-3 my-6">
