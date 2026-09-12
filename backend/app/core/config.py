@@ -49,6 +49,11 @@ class Settings(BaseSettings):
         )
     )
 
+    CORS_ORIGIN_REGEX: str = os.getenv(
+        "CORS_ORIGIN_REGEX",
+        r"^https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+)(:\d+)?$"
+    )
+
     @property
     def cors_origin_list(self) -> List[str]:
         if not self.CORS_ORIGINS or self.CORS_ORIGINS.strip() == "*":

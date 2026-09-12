@@ -9,7 +9,8 @@ import axios from 'axios';
 export function normalizeApiBaseUrl(rawUrl) {
   let url = (rawUrl || '').trim();
   if (!url) {
-    url = 'http://127.0.0.1:8000/api/v1';
+    const hostname = (typeof window !== 'undefined' && window.location && window.location.hostname) ? window.location.hostname : '127.0.0.1';
+    url = `http://${hostname}:8000/api/v1`;
   }
 
   // Remove trailing slashes
