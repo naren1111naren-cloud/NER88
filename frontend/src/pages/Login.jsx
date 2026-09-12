@@ -152,6 +152,14 @@ export const Login = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
+  // ── Auto-login for ?demo=true bypass URL ──
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('demo') === 'true') {
+      handleDemoLogin('dispatcher@linkx8.in', 'Dispatch@123');
+    }
+  }, []);
+
   // ── Validation ──
   const validateEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
   const validateMobile = (v) => /^[6-9]\d{9}$/.test(v.replace(/\s/g, ''));
@@ -442,6 +450,7 @@ export const Login = () => {
                 { label: 'Admin', email: 'admin@linkx8.in', pw: 'Admin@123' },
                 { label: 'Dispatcher', email: 'dispatcher@linkx8.in', pw: 'Dispatch@123' },
                 { label: 'Field Officer', email: 'field@linkx8.in', pw: 'Field@123' },
+                { label: 'Viewer', email: 'viewer@linkx8.in', pw: 'Viewer@123' },
               ].map(({ label, email: dEmail, pw }) => (
                 <button
                   key={label}
