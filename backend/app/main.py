@@ -27,6 +27,11 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 
+from app.core.rate_limit import RateLimitMiddleware
+
+# Rate Limiting Middleware
+app.add_middleware(RateLimitMiddleware)
+
 # CORS Middleware setup
 cors_origins = settings.cors_origin_list
 app.add_middleware(
