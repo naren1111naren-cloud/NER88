@@ -138,6 +138,23 @@ def seed_database():
 
     # Reset tables if needed or check if admin user exists
     if db.query(User).filter(User.email.in_(["admin@linkx8.in", "admin@nerlogiai.in"])).first():
+        # Upgrade any legacy sha256 hashes to bcrypt
+        demo_passwords = {
+            "admin@linkx8.in": "Admin@123",
+            "dispatcher@linkx8.in": "Dispatch@123",
+            "field@linkx8.in": "Field@123",
+            "viewer@linkx8.in": "Viewer@123",
+            "admin@nerlogiai.in": "Admin@123",
+            "dispatcher@nerlogiai.in": "Dispatch@123",
+            "field@nerlogiai.in": "Field@123",
+            "viewer@nerlogiai.in": "Viewer@123",
+        }
+        for u in db.query(User).all():
+            if u.hashed_password and not (u.hashed_password.startswith("$2b$") or u.hashed_password.startswith("$2a$")):
+                raw_pwd = demo_passwords.get(u.email, "Admin@123")
+                u.hashed_password = get_password_hash(raw_pwd)
+        db.commit()
+
         if db.query(Bridge).count() == 0:
             seed_bridges_data(db)
         if db.query(TrafficRecord).count() == 0:
