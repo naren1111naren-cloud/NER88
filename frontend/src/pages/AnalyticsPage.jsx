@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { safeArray } from '../utils/apiHelpers';
+import { StatusBadge } from '../components/StatusBadge';
 import { BarChart3, TrendingUp, ShieldCheck, MapPin, Activity, Package, Clock, Shield } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 
@@ -23,6 +24,9 @@ export const AnalyticsPage = () => {
       {/* Page Header */}
       <div className="bg-white border border-[#E5E7EB] p-5 rounded-2xl shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
+          <div className="flex items-center gap-2 mb-1">
+            <StatusBadge variant="simulation" size="sm">Sandbox Adapter</StatusBadge>
+          </div>
           <h1 className="text-lg font-extrabold text-[#1F2937] flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-purple-600" />
             Logistics Bottleneck Analytics & Regional Accessibility BI

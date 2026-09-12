@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import { useToast } from '../context/ToastContext';
+import { StatusBadge } from '../components/StatusBadge';
 import VehicleIntelligenceSection from '../components/VehicleIntelligenceSection';
 
 export const GovernmentIntegrationsPage = () => {
@@ -203,21 +204,18 @@ export const GovernmentIntegrationsPage = () => {
         <div className="absolute right-0 top-0 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none"></div>
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1.5">
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <span className="px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wide uppercase bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                Official Multi-Agency Gateway
+                Integration Adapter Contracts (Pending NIC Gateway Keys)
               </span>
-              <span className="flex items-center gap-1.5 text-xs text-teal-400 font-medium">
-                <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span>
-                Integration Ready
-              </span>
+              <StatusBadge variant="simulation" size="sm">Sandbox Adapter</StatusBadge>
             </div>
             <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2.5">
               <Building2 className="w-7 h-7 text-purple-400" />
-              Government APIs & Intelligence Feeds
+              Government Integration Contracts & Sandbox Adapters
             </h1>
             <p className="text-sm text-slate-300 max-w-2xl">
-              Direct connection with <strong>data.gov.in</strong>, <strong>NHAI RAMS & FASTag</strong>, <strong>Border Roads Organisation (BRO)</strong>, and <strong>MoRTH VAHAN</strong> to synchronize real-time corridor conditions, bridge weight limits, and fleet clearances.
+              Integration adapter contracts for <strong>data.gov.in</strong>, <strong>NHAI RAMS & FASTag</strong>, <strong>Border Roads Organisation (BRO)</strong>, and <strong>MoRTH VAHAN</strong> (operating under sandbox mock contracts pending NIC production API credentials).
             </p>
           </div>
 
@@ -238,7 +236,7 @@ export const GovernmentIntegrationsPage = () => {
           <div className="bg-[#120E22]/80 border border-purple-500/20 rounded-lg p-2.5">
             <div className="flex items-center justify-between text-xs text-slate-400">
               <span>data.gov.in</span>
-              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <StatusBadge variant="simulation" size="sm">Sandbox</StatusBadge>
             </div>
             <div className="font-bold text-xs text-white mt-1">OGD India Platform</div>
             <div className="text-[10px] text-purple-300 mt-0.5">3 Active Catalogs</div>
@@ -247,7 +245,7 @@ export const GovernmentIntegrationsPage = () => {
           <div className="bg-[#120E22]/80 border border-purple-500/20 rounded-lg p-2.5">
             <div className="flex items-center justify-between text-xs text-slate-400">
               <span>NHAI RAMS</span>
-              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <StatusBadge variant="simulation" size="sm">Sandbox</StatusBadge>
             </div>
             <div className="font-bold text-xs text-white mt-1">National Highways</div>
             <div className="text-[10px] text-purple-300 mt-0.5">{nhaiCorridors.length} NER Corridors</div>
@@ -256,7 +254,7 @@ export const GovernmentIntegrationsPage = () => {
           <div className="bg-[#120E22]/80 border border-purple-500/20 rounded-lg p-2.5">
             <div className="flex items-center justify-between text-xs text-slate-400">
               <span>BRO Command</span>
-              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <StatusBadge variant="simulation" size="sm">Sandbox</StatusBadge>
             </div>
             <div className="font-bold text-xs text-white mt-1">Border Roads Org</div>
             <div className="text-[10px] text-purple-300 mt-0.5">{broPasses.length} Mountain Passes</div>
@@ -265,7 +263,7 @@ export const GovernmentIntegrationsPage = () => {
           <div className="bg-[#120E22]/80 border border-purple-500/20 rounded-lg p-2.5">
             <div className="flex items-center justify-between text-xs text-slate-400">
               <span>MoRTH VAHAN</span>
-              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <StatusBadge variant="simulation" size="sm">Sandbox</StatusBadge>
             </div>
             <div className="font-bold text-xs text-white mt-1">National Registry</div>
             <div className="text-[10px] text-purple-300 mt-0.5">GVW & Permits</div>
@@ -274,7 +272,7 @@ export const GovernmentIntegrationsPage = () => {
           <div className="bg-[#120E22]/80 border border-purple-500/20 rounded-lg p-2.5 col-span-2 sm:col-span-4 lg:col-span-1">
             <div className="flex items-center justify-between text-xs text-slate-400">
               <span>NDMA Sachet</span>
-              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <StatusBadge variant="simulation" size="sm">Sandbox</StatusBadge>
             </div>
             <div className="font-bold text-xs text-white mt-1">CAP Early Warning</div>
             <div className="text-[10px] text-purple-300 mt-0.5">Flood & Landslides</div>

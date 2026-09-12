@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { useToast } from '../context/ToastContext';
+import { StatusBadge } from './StatusBadge';
 import { 
   Truck, Search, CheckCircle2, AlertTriangle, XCircle, ShieldAlert,
   Calendar, Fuel, Scale, FileText, Building, MapPin, Gauge, Shield,
@@ -130,21 +131,18 @@ export const VehicleIntelligenceSection = ({ initialPlate = 'AS01EC9921', onSele
       {/* Header Bar */}
       <div className="p-5 bg-gradient-to-r from-[#171329] via-[#231C3D] to-[#171329] text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/30">
-              MoRTH / NLDSL ULIP v6.0
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide uppercase bg-purple-500/20 text-purple-300 border border-purple-500/30">
+              MoRTH / NLDSL ULIP Adapter Contract
             </span>
-            <span className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              VAHAN/04 Primary Lookup
-            </span>
+            <StatusBadge variant="simulation" size="sm">Sandbox Adapter</StatusBadge>
           </div>
           <h2 className="text-lg font-extrabold text-white flex items-center gap-2">
             <Truck className="w-5 h-5 text-purple-400" />
             Vehicle Intelligence & National Registry Verification
           </h2>
           <p className="text-xs text-slate-300 max-w-2xl">
-            Live backend-to-backend integration with MoRTH VAHAN via ULIP gateway. Query commercial vehicle specifications, Gross Vehicle Weight (GVW), fitness validity, and bridge load clearance.
+            Integration adapter for MoRTH VAHAN via ULIP gateway contract. Query commercial vehicle specifications, Gross Vehicle Weight (GVW), fitness validity, and bridge load clearance (Sandbox mock mode pending NIC keys).
           </p>
         </div>
 
