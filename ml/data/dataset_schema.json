@@ -1,0 +1,75 @@
+{
+  "dataset_name": "NER_Logistics_Disruption_Dataset_v1.0",
+  "data_type": "SIMULATED_DEMO_DATASET",
+  "region": "North Eastern Region (NER) India",
+  "total_records": 500,
+  "columns": {
+    "corridor_id": {
+      "type": "string",
+      "description": "Unique highway corridor code (e.g. NH27-GAU-SHL)",
+      "is_identifier": true
+    },
+    "origin_city": {
+      "type": "string",
+      "description": "Origin logistics hub in NER",
+      "categorical": true
+    },
+    "destination_city": {
+      "type": "string",
+      "description": "Destination logistics hub in NER",
+      "categorical": true
+    },
+    "distance_km": {
+      "type": "float",
+      "description": "Route distance in kilometers",
+      "range": [10.0, 1200.0]
+    },
+    "terrain_elevation_gain_m": {
+      "type": "float",
+      "description": "Cumulative elevation gain along mountain pass",
+      "range": [50.0, 3500.0]
+    },
+    "rainfall_mm_hr": {
+      "type": "float",
+      "description": "Current or forecasted rainfall intensity",
+      "range": [0.0, 250.0]
+    },
+    "active_incidents_count": {
+      "type": "integer",
+      "description": "Number of field reported incidents on corridor",
+      "range": [0, 10]
+    },
+    "highest_severity_level": {
+      "type": "string",
+      "description": "Highest severity incident level",
+      "options": ["NONE", "LOW", "MEDIUM", "HIGH", "CRITICAL"]
+    },
+    "road_blocked_status": {
+      "type": "integer",
+      "description": "1 if any segment is completely blocked, else 0",
+      "range": [0, 1]
+    },
+    "historical_landslide_freq": {
+      "type": "float",
+      "description": "Historical monsoon disruption frequency score (0-1.0)",
+      "range": [0.0, 1.0]
+    },
+    "traffic_congestion_index": {
+      "type": "float",
+      "description": "Congestion score from 0.0 (clear) to 1.0 (standstill)",
+      "range": [0.0, 1.0]
+    },
+    "risk_score": {
+      "type": "float",
+      "description": "Target continuous risk score 0 to 100",
+      "is_target": true,
+      "range": [0.0, 100.0]
+    },
+    "risk_category": {
+      "type": "string",
+      "description": "Target risk classification category",
+      "is_target": true,
+      "options": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+    }
+  }
+}

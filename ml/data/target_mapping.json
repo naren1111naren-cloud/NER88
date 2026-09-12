@@ -1,0 +1,20 @@
+{
+  "score_ranges": [
+    {"category": "LOW", "min_score": 0.0, "max_score": 24.99, "action": "NORMAL_MONITORING"},
+    {"category": "MEDIUM", "min_score": 25.0, "max_score": 49.99, "action": "CAUTION_ADVISORY"},
+    {"category": "HIGH", "min_score": 50.0, "max_score": 74.99, "action": "PREPARE_ALTERNATIVE_ROUTE"},
+    {"category": "CRITICAL", "min_score": 75.0, "max_score": 100.0, "action": "MANDATORY_REROUTE"}
+  ],
+  "category_to_label_id": {
+    "LOW": 0,
+    "MEDIUM": 1,
+    "HIGH": 2,
+    "CRITICAL": 3
+  },
+  "label_id_to_category": {
+    "0": "LOW",
+    "1": "MEDIUM",
+    "2": "HIGH",
+    "3": "CRITICAL"
+  }
+}

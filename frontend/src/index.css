@@ -1,0 +1,89 @@
+@import 'leaflet/dist/leaflet.css';
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --brand-purple: #6D28D9;
+    --brand-violet: #8B5CF6;
+    --brand-teal: #14B8A6;
+    --brand-dark: #171329;
+    --brand-bg: #F7F7FB;
+    --brand-card: #FFFFFF;
+    --brand-text: #1F2937;
+    --brand-muted: #6B7280;
+    --brand-border: #E5E7EB;
+  }
+
+  body {
+    @apply bg-[#F7F7FB] text-[#1F2937] font-sans antialiased min-h-screen selection:bg-[#8B5CF6] selection:text-white;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+}
+
+/* Gradient Utility Classes */
+.bg-brand-gradient {
+  background: linear-gradient(135deg, #6D28D9 0%, #8B5CF6 50%, #14B8A6 100%);
+}
+
+.text-brand-gradient {
+  background: linear-gradient(135deg, #6D28D9 0%, #8B5CF6 50%, #14B8A6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.border-brand-gradient {
+  border-image: linear-gradient(135deg, #6D28D9, #8B5CF6, #14B8A6) 1;
+}
+
+/* Panel & Layout Styles */
+.glass-panel, .corp-card, .card-panel {
+  @apply bg-white border border-[#E5E7EB] rounded-xl shadow-sm transition-all duration-200;
+}
+
+.glass-panel:hover, .card-panel:hover {
+  @apply border-[#CBD5E1];
+}
+
+.dark-sidebar {
+  background-color: #171329;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F7F7FB;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #8B5CF6;
+}
+
+/* Leaflet Map Enterprise Styling */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  background-color: #F7F7FB !important;
+  font-family: inherit;
+}
+.leaflet-popup-content-wrapper {
+  background: #FFFFFF !important;
+  color: #1F2937 !important;
+  border: 1px solid #E5E7EB !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 16px rgba(23, 19, 41, 0.12) !important;
+}
+.leaflet-popup-tip {
+  background: #FFFFFF !important;
+}
+
+

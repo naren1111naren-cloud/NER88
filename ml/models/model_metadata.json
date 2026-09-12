@@ -1,0 +1,20 @@
+{
+  "model_version": "v1.0.0",
+  "trained_at": "2026-09-02T21:20:00Z",
+  "algorithm": "RandomForest Ensemble (Regressor + Classifier)",
+  "feature_contract_version": "1.0.0",
+  "metrics": {
+    "accuracy": 0.92,
+    "f1_macro": 0.7201
+  },
+  "feature_importance": {
+    "distance_km": 0.0038,
+    "terrain_elevation_gain_m": 0.0068,
+    "rainfall_mm_hr": 0.0302,
+    "active_incidents_count": 0.0461,
+    "highest_severity_numeric": 0.0846,
+    "road_blocked_status": 0.8157,
+    "historical_landslide_freq": 0.0076,
+    "traffic_congestion_index": 0.0051
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "raw_column_to_feature": {
+    "distance": "distance_km",
+    "dist": "distance_km",
+    "elevation": "terrain_elevation_gain_m",
+    "rain": "rainfall_mm_hr",
+    "precipitation": "rainfall_mm_hr",
+    "incidents": "active_incidents_count",
+    "severity": "highest_severity_level",
+    "blocked": "road_blocked_status",
+    "landslide_risk": "historical_landslide_freq",
+    "congestion": "traffic_congestion_index"
+  },
+  "severity_to_numeric": {
+    "NONE": 0,
+    "LOW": 1,
+    "MEDIUM": 2,
+    "HIGH": 3,
+    "CRITICAL": 4
+  }
+}

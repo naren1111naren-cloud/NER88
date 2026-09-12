@@ -1,0 +1,72 @@
+{
+  "contract_version": "1.0.0",
+  "model_compatibility": ["v1.0.0"],
+  "feature_order": [
+    "distance_km",
+    "terrain_elevation_gain_m",
+    "rainfall_mm_hr",
+    "active_incidents_count",
+    "highest_severity_numeric",
+    "road_blocked_status",
+    "historical_landslide_freq",
+    "traffic_congestion_index"
+  ],
+  "feature_specifications": {
+    "distance_km": {
+      "type": "float",
+      "required": true,
+      "min": 1.0,
+      "max": 2000.0,
+      "default": 150.0
+    },
+    "terrain_elevation_gain_m": {
+      "type": "float",
+      "required": true,
+      "min": 0.0,
+      "max": 5000.0,
+      "default": 800.0
+    },
+    "rainfall_mm_hr": {
+      "type": "float",
+      "required": true,
+      "min": 0.0,
+      "max": 300.0,
+      "default": 10.0
+    },
+    "active_incidents_count": {
+      "type": "integer",
+      "required": true,
+      "min": 0,
+      "max": 20,
+      "default": 0
+    },
+    "highest_severity_numeric": {
+      "type": "integer",
+      "required": true,
+      "min": 0,
+      "max": 4,
+      "default": 0
+    },
+    "road_blocked_status": {
+      "type": "integer",
+      "required": true,
+      "min": 0,
+      "max": 1,
+      "default": 0
+    },
+    "historical_landslide_freq": {
+      "type": "float",
+      "required": true,
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.2
+    },
+    "traffic_congestion_index": {
+      "type": "float",
+      "required": true,
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.3
+    }
+  }
+}

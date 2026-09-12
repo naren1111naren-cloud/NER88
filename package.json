@@ -1,0 +1,16 @@
+{
+  "name": "link-x8-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "LINK X8 — Smart Logistics & Accessibility Intelligence Platform for North Eastern Region (MDoNER)",
+  "scripts": {
+    "dev": "concurrently -k -p \"[{name}]\" -n \"BACKEND,FRONTEND\" -c \"cyan,magenta\" \"npm run backend\" \"npm run frontend\"",
+    "frontend": "npm --prefix frontend run dev",
+    "backend": "python -m uvicorn app.main:app --app-dir backend --reload --host 127.0.0.1 --port 8000",
+    "build": "npm --prefix frontend run build",
+    "preview": "npm --prefix frontend run preview"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  }
+}
