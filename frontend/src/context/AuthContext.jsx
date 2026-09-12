@@ -93,19 +93,14 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('link_x8_user', JSON.stringify(userData));
       return { success: true };
     } catch (err) {
-      // Fallback for offline/demo login
-      const fallbackUser = {
-        id: 1,
-        email: email,
-        full_name: email.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-        role: email.includes('admin') ? 'Admin' : email.includes('dispatch') ? 'Dispatcher' : email.includes('field') ? 'Field Officer' : 'Viewer'
-      };
-      const demoToken = 'demo-token-' + Date.now();
-      setToken(demoToken);
-      setUser(fallbackUser);
-      localStorage.setItem('link_x8_token', demoToken);
-      localStorage.setItem('link_x8_user', JSON.stringify(fallbackUser));
-      return { success: true };
+      setToken(null);
+      setUser(null);
+      localStorage.removeItem('link_x8_token');
+      localStorage.removeItem('link_x8_user');
+      localStorage.removeItem('ner_logiai_token');
+      localStorage.removeItem('ner_logiai_user');
+      const errorMsg = err.response?.data?.detail || err.message || 'Authentication failed';
+      return { success: false, error: errorMsg };
     }
   };
 

@@ -169,7 +169,7 @@ export const Login = () => {
         setSuccess(true);
         setTimeout(() => navigate('/welcome'), 600);
       } else {
-        setError('Authentication failed. Please check your credentials.');
+        setError(result?.error || 'Authentication failed. Please check your credentials.');
       }
     } catch {
       setError('An error occurred. Please try again.');
