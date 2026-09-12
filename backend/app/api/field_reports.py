@@ -2,7 +2,8 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database.database import get_db
-from app.models.models import FieldReport, Incident, Alert, Delivery, AuditLog, Bridge
+from app.core.security import get_current_active_user
+from app.models.models import FieldReport, Incident, Alert, Delivery, AuditLog, Bridge, User
 from app.schemas.schemas import SyncBatchRequest
 from app.services.accessibility_service import AccessibilityEngine
 
@@ -13,7 +14,11 @@ def get_field_reports(db: Session = Depends(get_db)):
     return db.query(FieldReport).order_by(FieldReport.reported_at.desc()).all()
 
 @router.post("/sync")
-def sync_field_reports(payload: SyncBatchRequest, db: Session = Depends(get_db)):
+def sync_field_reports(
+    payload: SyncBatchRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
     """
     Offline Synchronization Endpoint:
     Receives batched field incident reports collected offline by field officers.

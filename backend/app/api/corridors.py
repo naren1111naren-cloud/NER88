@@ -2,7 +2,8 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database.database import get_db
-from app.models.models import Corridor, AuditLog
+from app.core.security import get_current_active_user
+from app.models.models import Corridor, AuditLog, User
 from app.schemas.schemas import CorridorOut, APIResponse
 
 router = APIRouter(prefix="/corridors", tags=["Transport Corridor Monitoring"])
@@ -19,7 +20,13 @@ def get_corridor(corridor_id: int, db: Session = Depends(get_db)):
     return c
 
 @router.put("/{corridor_id}/status", response_model=CorridorOut)
-def update_corridor_status(corridor_id: int, status: str, risk_level: str = "MEDIUM", db: Session = Depends(get_db)):
+def update_corridor_status(
+    corridor_id: int,
+    status: str,
+    risk_level: str = "MEDIUM",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
     c = db.query(Corridor).filter(Corridor.id == corridor_id).first()
     if not c:
         raise HTTPException(status_code=404, detail="Corridor not found")
@@ -27,7 +34,7 @@ def update_corridor_status(corridor_id: int, status: str, risk_level: str = "MED
     c.status = status.upper()
     c.risk_level = risk_level.upper()
     db.add(AuditLog(
-        user_email="dispatcher@linkx8.in",
+        user_email=current_user.email if hasattr(current_user, 'email') else "dispatcher@linkx8.in",
         action="UPDATE_CORRIDOR_STATUS",
         resource="Corridor",
         details=f"Updated corridor {c.corridor_code} status to {c.status} ({c.risk_level})"

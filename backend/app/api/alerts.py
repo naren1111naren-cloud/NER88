@@ -14,7 +14,8 @@ from sqlalchemy.orm import Session
 from jose import jwt, JWTError
 
 from app.database.database import get_db
-from app.models.models import Alert
+from app.core.security import get_current_active_user
+from app.models.models import Alert, User
 from app.schemas.schemas import (
     AlertOut,
     AlertAcknowledgeIn,
@@ -158,7 +159,8 @@ async def stream_realtime_alerts(
 def acknowledge_alert(
     alert_id: int,
     payload: AlertAcknowledgeIn = AlertAcknowledgeIn(),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Marks an alert as ACKNOWLEDGED, logs to audit trail, and broadcasts state update in real-time.
@@ -166,7 +168,7 @@ def acknowledge_alert(
     try:
         return AlertDeliveryService.acknowledge_alert(
             alert_id=alert_id,
-            acknowledged_by=payload.acknowledged_by or "Regional Dispatcher",
+            acknowledged_by=payload.acknowledged_by or (current_user.full_name if hasattr(current_user, 'full_name') else "Regional Dispatcher"),
             db=db,
             notes=payload.notes
         )
@@ -174,7 +176,11 @@ def acknowledge_alert(
         raise HTTPException(status_code=404, detail=str(e))
 
 @router.put("/{alert_id}/read")
-def mark_alert_read(alert_id: int, db: Session = Depends(get_db)):
+def mark_alert_read(
+    alert_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
     """
     Backward-compatible read marker endpoint.
     """
@@ -190,7 +196,8 @@ def mark_alert_read(alert_id: int, db: Session = Depends(get_db)):
 @router.post("/trigger-test", response_model=AlertOut)
 def trigger_test_alert(
     payload: AlertCreateIn,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Explicit test endpoint for dispatchers and automated tests to broadcast a live alert.

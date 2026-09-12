@@ -2,7 +2,8 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database.database import get_db
-from app.models.models import Incident, Alert, Delivery, AuditLog, Bridge
+from app.core.security import get_current_active_user
+from app.models.models import Incident, Alert, Delivery, AuditLog, Bridge, User
 from app.schemas.schemas import IncidentOut, IncidentCreate
 from app.services.accessibility_service import AccessibilityEngine
 from app.services.operational_alerts_service import BlockedRoadAlertService
@@ -14,7 +15,11 @@ def get_incidents(db: Session = Depends(get_db)):
     return db.query(Incident).order_by(Incident.created_at.desc()).all()
 
 @router.post("", response_model=IncidentOut)
-def create_incident(payload: IncidentCreate, db: Session = Depends(get_db)):
+def create_incident(
+    payload: IncidentCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
     data = payload.model_dump()
     load_restriction = data.pop("load_restriction_type", None)
     inc = Incident(**data)
@@ -52,7 +57,7 @@ def create_incident(payload: IncidentCreate, db: Session = Depends(get_db)):
     AccessibilityEngine.recalculate_all_accessibility(db, source_incident=inc)
 
     db.add(AuditLog(
-        user_email="field_officer@linkx8.in",
+        user_email=current_user.email if hasattr(current_user, 'email') else "field_officer@linkx8.in",
         action="REPORT_INCIDENT",
         resource="Incident",
         details=f"Field incident reported: {inc.incident_type} at {inc.location_name} ({inc.severity})"

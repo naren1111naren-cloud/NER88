@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.database.database import get_db
-from app.models.models import Bridge, Corridor, Incident, Alert, AuditLog
+from app.core.security import get_current_active_user
+from app.models.models import Bridge, Corridor, Incident, Alert, AuditLog, User
 from app.schemas.schemas import BridgeOut, BridgeStatusUpdate, BridgeImpactOut, BridgeLoadValidationRequest, BridgeLoadValidationOut
 from app.services.accessibility_service import AccessibilityEngine
 
@@ -123,7 +124,12 @@ def get_bridge_impact(bridge_id: int, db: Session = Depends(get_db)):
     return impact
 
 @router.put("/{bridge_id}/status", response_model=BridgeOut)
-def update_bridge_status(bridge_id: int, payload: BridgeStatusUpdate, db: Session = Depends(get_db)):
+def update_bridge_status(
+    bridge_id: int,
+    payload: BridgeStatusUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
     """
     Updates bridge operational status, load restrictions, and condition.
     Triggers automatic cascade recalculation of connected corridor, district accessibility, and alerts.
@@ -140,11 +146,13 @@ def update_bridge_status(bridge_id: int, payload: BridgeStatusUpdate, db: Sessio
         b.load_restriction_type = payload.load_restriction_type
     if payload.load_capacity_tons is not None:
         b.load_capacity_tons = payload.load_capacity_tons
-    if payload.restriction_details:
+    if hasattr(payload, 'restriction_details') and payload.restriction_details:
         b.restriction_details = payload.restriction_details
+    if hasattr(payload, 'data_source') and payload.data_source:
+        b.data_source = payload.data_source
 
-    b.data_source = "ADMIN_UPDATE"
     b.is_verified = True
+    b.last_inspected_at = datetime.utcnow()
     b.last_updated = datetime.utcnow()
 
     # Recalculate bridge and network cascade

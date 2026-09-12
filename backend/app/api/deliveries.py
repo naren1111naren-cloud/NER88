@@ -11,7 +11,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database.database import get_db
-from app.models.models import Delivery, Vehicle, AuditLog
+from app.core.security import get_current_active_user
+from app.models.models import Delivery, Vehicle, AuditLog, User
 from app.schemas.schemas import (
     DeliveryOut,
     DeliveryCreate,
@@ -109,7 +110,8 @@ def update_delivery_live_eta(
 @router.post("/consignment", response_model=DeliveryOut)
 def create_commodity_consignment(
     payload: CommodityConsignmentCreateIn,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Creates an essential commodity consignment with designated category, temperature control, and route.
@@ -120,7 +122,8 @@ def create_commodity_consignment(
 def update_commodity_status(
     delivery_id: int,
     payload: CommodityStatusUpdateIn,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Updates lifecycle status (CREATED -> ASSIGNED -> LOADED -> DISPATCHED -> IN_TRANSIT -> DELAYED_AT_RISK -> ARRIVED -> DELIVERED).
@@ -134,7 +137,8 @@ def update_commodity_status(
 def complete_commodity_delivery(
     delivery_id: int,
     payload: CommodityDeliveryCompleteIn,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Marks delivery as completed with consignee acknowledgment and audit record.
@@ -160,7 +164,11 @@ def get_deliveries(db: Session = Depends(get_db)):
     return db.query(Delivery).order_by(Delivery.created_at.desc()).all()
 
 @router.post("", response_model=DeliveryOut)
-def create_delivery(payload: DeliveryCreate, db: Session = Depends(get_db)):
+def create_delivery(
+    payload: DeliveryCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
     consignment_payload = CommodityConsignmentCreateIn(
         cargo_name=payload.cargo_name,
         cargo_category=payload.cargo_category or "Medicines",
@@ -183,7 +191,11 @@ def get_delivery(delivery_id: int, db: Session = Depends(get_db)):
     return d
 
 @router.post("/{delivery_id}/reroute", response_model=DeliveryOut)
-def reroute_delivery(delivery_id: int, db: Session = Depends(get_db)):
+def reroute_delivery(
+    delivery_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
     d = db.query(Delivery).filter(Delivery.id == delivery_id).first()
     if not d:
         raise HTTPException(status_code=404, detail="Delivery not found")
@@ -197,7 +209,7 @@ def reroute_delivery(delivery_id: int, db: Session = Depends(get_db)):
     d.delay_reason = "Dynamic Corridor Reroute (Avoid Primary Obstruction)"
 
     db.add(AuditLog(
-        user_email="dispatcher@linkx8.in",
+        user_email=current_user.email if hasattr(current_user, 'email') else "dispatcher@linkx8.in",
         action="REROUTE_DELIVERY",
         resource="Delivery",
         details=f"Approved reroute for {d.delivery_code} to Alternate Route B"
