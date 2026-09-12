@@ -23,7 +23,7 @@ export const Dashboard = () => {
   const navigate = useNavigate();
   const { isDemoMode, startDemoScenario, startHeavyRainScenario, resetDemoScenario } = useDemo();
   const { showToast } = useToast();
-  const { liveVehicles } = useAlertStream();
+  const { liveVehicles, lastEventId } = useAlertStream();
   const { isTracking, startTracking, stopTracking, coords, speed, error: gpsError, lastSyncTime, activeVehicleCode } = usePhoneGPS('NER-V001');
 
   const [summary, setSummary] = useState(null);
@@ -85,15 +85,30 @@ export const Dashboard = () => {
   useEffect(() => {
     fetchData();
 
+    // 10-second automatic polling interval
+    const intervalId = setInterval(() => {
+      fetchData();
+    }, 10000);
+
     const handleDemoEvent = () => fetchData();
     window.addEventListener('sih_demo_triggered', handleDemoEvent);
     window.addEventListener('sih_demo_reset', handleDemoEvent);
+    window.addEventListener('sse_alert_received', handleDemoEvent);
 
     return () => {
+      clearInterval(intervalId);
       window.removeEventListener('sih_demo_triggered', handleDemoEvent);
       window.removeEventListener('sih_demo_reset', handleDemoEvent);
+      window.removeEventListener('sse_alert_received', handleDemoEvent);
     };
   }, []);
+
+  // Trigger immediate refetch on incoming SSE alert or vehicle position update events
+  useEffect(() => {
+    if (lastEventId) {
+      fetchData();
+    }
+  }, [lastEventId, liveVehicles]);
 
   const triggerRerouteApproval = (id) => {
     setSelectedDeliveryId(id);
