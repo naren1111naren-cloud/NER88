@@ -1,67 +1,85 @@
 import json
 from datetime import datetime, timedelta
 from app.database.database import engine, Base, SessionLocal
-from app.models.models import User, Vehicle, Delivery, Incident, Alert, WeatherRecord, SystemSettings, AuditLog, Corridor, District, Bridge, TrafficRecord
+from app.models.models import User, Vehicle, Delivery, Incident, Alert, WeatherRecord, SystemSettings, AuditLog, Corridor, District, Bridge, TrafficRecord, RouteDecision
 from app.core.security import get_password_hash
-from app.services.routing_service import PRIMARY_GUWAHATI_IMPHAL_WAYPOINTS, ALTERNATE_SILCHAR_IMPHAL_WAYPOINTS
+from app.services.routing_service import (
+    PRIMARY_GUWAHATI_IMPHAL_WAYPOINTS,
+    ALTERNATE_SILCHAR_IMPHAL_WAYPOINTS,
+    PRIMARY_GUWAHATI_SHILLONG_WAYPOINTS,
+    ALTERNATE_GUWAHATI_SHILLONG_WAYPOINTS
+)
 from app.services.accessibility_service import AccessibilityEngine
 
 from sqlalchemy import text
 
 def ensure_schema_migrations(engine):
-    def add_col_if_missing(conn, table, col, col_type, default=None):
-        try:
-            conn.execute(text(f"SELECT {col} FROM {table} LIMIT 1"))
-        except Exception:
-            try:
-                def_str = f" DEFAULT {default}" if default is not None else ""
-                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}{def_str}"))
-                conn.commit()
-            except Exception:
-                pass
-
+    # Ensure all tables including RouteDecision are created
+    Base.metadata.create_all(bind=engine)
     with engine.connect() as conn:
+        def get_existing_columns(table_name):
+            try:
+                res = conn.execute(text(f"PRAGMA table_info({table_name})")).fetchall()
+                return {row[1] for row in res}
+            except Exception:
+                return set()
+
+        def add_col_if_missing(table, col, col_type, default=None):
+            cols = get_existing_columns(table)
+            if col not in cols:
+                try:
+                    def_str = f" DEFAULT {default}" if default is not None else ""
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}{def_str}"))
+                    conn.commit()
+                except Exception as e:
+                    print(f"Migration add column {table}.{col} warning: {e}")
+
+        # Corridors
+        add_col_if_missing("corridors", "accessibility_status", "VARCHAR", "'OPEN'")
+        add_col_if_missing("corridors", "factor_summary", "VARCHAR", "'Normal road and bridge passage'")
+        add_col_if_missing("corridors", "data_sources", "TEXT", "'[\"Open-Meteo Live API\", \"Field Officer Inspection Incident Feed\", \"BRO Bridge Clearance Registry\"]'")
+
         # Bridges
-        add_col_if_missing(conn, "bridges", "connected_road", "VARCHAR")
-        add_col_if_missing(conn, "bridges", "load_restriction_type", "VARCHAR", "'No Restriction'")
-        add_col_if_missing(conn, "bridges", "is_verified", "BOOLEAN", "1")
+        add_col_if_missing("bridges", "connected_road", "VARCHAR")
+        add_col_if_missing("bridges", "load_restriction_type", "VARCHAR", "'No Restriction'")
+        add_col_if_missing("bridges", "is_verified", "BOOLEAN", "1")
 
         # Incidents
-        add_col_if_missing(conn, "incidents", "affected_bridge_id", "INTEGER")
-        add_col_if_missing(conn, "incidents", "affected_bridge_code", "VARCHAR")
+        add_col_if_missing("incidents", "affected_bridge_id", "INTEGER")
+        add_col_if_missing("incidents", "affected_bridge_code", "VARCHAR")
 
         # Field reports
-        add_col_if_missing(conn, "field_reports", "affected_bridge_id", "INTEGER")
-        add_col_if_missing(conn, "field_reports", "affected_bridge_code", "VARCHAR")
+        add_col_if_missing("field_reports", "affected_bridge_id", "INTEGER")
+        add_col_if_missing("field_reports", "affected_bridge_code", "VARCHAR")
 
         # Vehicles
-        add_col_if_missing(conn, "vehicles", "device_id", "VARCHAR")
-        add_col_if_missing(conn, "vehicles", "device_api_key", "VARCHAR")
-        add_col_if_missing(conn, "vehicles", "odometer_km", "FLOAT", "12450.0")
-        add_col_if_missing(conn, "vehicles", "ignition_status", "VARCHAR", "'ON'")
-        add_col_if_missing(conn, "vehicles", "telemetry_health", "VARCHAR", "'LIVE'")
-        add_col_if_missing(conn, "vehicles", "tracking_mode", "VARCHAR", "'SIMULATION'")
-        add_col_if_missing(conn, "vehicles", "altitude_m", "FLOAT", "150.0")
-        add_col_if_missing(conn, "vehicles", "battery_level_pct", "FLOAT", "98.0")
-        add_col_if_missing(conn, "vehicles", "satellites_connected", "INTEGER", "12")
-        add_col_if_missing(conn, "vehicles", "last_telemetry_at", "DATETIME")
+        add_col_if_missing("vehicles", "device_id", "VARCHAR")
+        add_col_if_missing("vehicles", "device_api_key", "VARCHAR")
+        add_col_if_missing("vehicles", "odometer_km", "FLOAT", "12450.0")
+        add_col_if_missing("vehicles", "ignition_status", "VARCHAR", "'ON'")
+        add_col_if_missing("vehicles", "telemetry_health", "VARCHAR", "'LIVE'")
+        add_col_if_missing("vehicles", "tracking_mode", "VARCHAR", "'SIMULATION'")
+        add_col_if_missing("vehicles", "altitude_m", "FLOAT", "150.0")
+        add_col_if_missing("vehicles", "battery_level_pct", "FLOAT", "98.0")
+        add_col_if_missing("vehicles", "satellites_connected", "INTEGER", "12")
+        add_col_if_missing("vehicles", "last_telemetry_at", "DATETIME")
 
         # Alerts
-        add_col_if_missing(conn, "alerts", "status", "VARCHAR", "'NEW'")
-        add_col_if_missing(conn, "alerts", "acknowledged_at", "DATETIME")
-        add_col_if_missing(conn, "alerts", "acknowledged_by", "VARCHAR")
-        add_col_if_missing(conn, "alerts", "source_incident_id", "INTEGER")
-        add_col_if_missing(conn, "alerts", "corridor_code", "VARCHAR")
-        add_col_if_missing(conn, "alerts", "district_name", "VARCHAR")
-        add_col_if_missing(conn, "alerts", "recommended_action", "TEXT")
-        add_col_if_missing(conn, "alerts", "resolved_at", "DATETIME")
+        add_col_if_missing("alerts", "status", "VARCHAR", "'NEW'")
+        add_col_if_missing("alerts", "acknowledged_at", "DATETIME")
+        add_col_if_missing("alerts", "acknowledged_by", "VARCHAR")
+        add_col_if_missing("alerts", "source_incident_id", "INTEGER")
+        add_col_if_missing("alerts", "corridor_code", "VARCHAR")
+        add_col_if_missing("alerts", "district_name", "VARCHAR")
+        add_col_if_missing("alerts", "recommended_action", "TEXT")
+        add_col_if_missing("alerts", "resolved_at", "DATETIME")
 
         # Deliveries
-        add_col_if_missing(conn, "deliveries", "delay_reason", "VARCHAR", "'Normal Transit Clearance'")
-        add_col_if_missing(conn, "deliveries", "quantity_description", "VARCHAR", "'Standard Pallet Load (500 units)'")
-        add_col_if_missing(conn, "deliveries", "temperature_controlled", "BOOLEAN", "0")
-        add_col_if_missing(conn, "deliveries", "completed_at", "DATETIME")
-        add_col_if_missing(conn, "deliveries", "actual_delivery_duration_hours", "FLOAT")
+        add_col_if_missing("deliveries", "delay_reason", "VARCHAR", "'Normal Transit Clearance'")
+        add_col_if_missing("deliveries", "quantity_description", "VARCHAR", "'Standard Pallet Load (500 units)'")
+        add_col_if_missing("deliveries", "temperature_controlled", "BOOLEAN", "0")
+        add_col_if_missing("deliveries", "completed_at", "DATETIME")
+        add_col_if_missing("deliveries", "actual_delivery_duration_hours", "FLOAT")
 
 def seed_traffic_data(db):
     if db.query(TrafficRecord).count() > 0:
@@ -131,6 +149,70 @@ def seed_traffic_data(db):
     db.add_all(traffic_seeds)
     db.commit()
 
+def seed_master_scenario_data(db):
+    """
+    Ensures master SIH demonstration entities exist:
+    - Vehicle V-102 (Cold-Chain Medical Carrier, Driver: Anil Das, Guwahati -> Shillong)
+    - Delivery MED-102 (Essential Life-Saving Medicines & Pediatric Vaccines)
+    """
+    now = datetime.utcnow()
+    v102 = db.query(Vehicle).filter(Vehicle.vehicle_code == "V-102").first()
+    if not v102:
+        v102 = Vehicle(
+            vehicle_code="V-102",
+            driver_name="Anil Das",
+            driver_phone="+91 98765 88102",
+            vehicle_type="Cold-Chain Medical Carrier (8T)",
+            status="IN_TRANSIT",
+            current_lat=26.1050,  # Jorabat Gateway on GS Road
+            current_lng=91.8200,
+            destination_city="Shillong",
+            risk_level="LOW",
+            speed_kmh=45.0,
+            heading_deg=165.0,
+            odometer_km=8420.0,
+            ignition_status="ON",
+            connectivity_status="ONLINE",
+            telemetry_health="LIVE",
+            tracking_mode="SIMULATION",
+            altitude_m=220.0,
+            battery_level_pct=96.0,
+            satellites_connected=14,
+            telemetry_source="SIMULATED GPS TELEMETRY",
+            last_telemetry_at=now
+        )
+        db.add(v102)
+        db.commit()
+        db.refresh(v102)
+
+    med102 = db.query(Delivery).filter(Delivery.delivery_code == "MED-102").first()
+    if not med102:
+        med102 = Delivery(
+            delivery_code="MED-102",
+            cargo_name="Essential Life-Saving Medicines & Pediatric Vaccines",
+            cargo_type="Cold-Chain Medical Consignment",
+            cargo_category="Medicines",
+            priority="EMERGENCY",
+            origin_city="Guwahati",
+            destination_city="Shillong",
+            assigned_vehicle_id=v102.id,
+            driver_name="Anil Das",
+            status="IN_TRANSIT",
+            original_eta=now + timedelta(hours=2.5),
+            revised_eta=now + timedelta(hours=2.5),
+            estimated_delay_mins=0,
+            delay_reason="Normal Mountain Transit Clearance",
+            route_risk_score=14.0,
+            route_risk_category="LOW",
+            quantity_description="24 Cryogenic Insulated Vaccine Containers (1,200 doses)",
+            temperature_controlled=True,
+            active_route_path=json.dumps(PRIMARY_GUWAHATI_SHILLONG_WAYPOINTS),
+            alternate_route_path=json.dumps(ALTERNATE_GUWAHATI_SHILLONG_WAYPOINTS),
+            created_at=now - timedelta(minutes=45)
+        )
+        db.add(med102)
+        db.commit()
+
 def seed_database():
     Base.metadata.create_all(bind=engine)
     ensure_schema_migrations(engine)
@@ -159,6 +241,8 @@ def seed_database():
             seed_bridges_data(db)
         if db.query(TrafficRecord).count() == 0:
             seed_traffic_data(db)
+        seed_corridors_data(db)
+        seed_master_scenario_data(db)
         AccessibilityEngine.recalculate_all_accessibility(db)
         print("Database already seeded.")
         db.close()
@@ -638,5 +722,349 @@ def seed_bridges_data(db):
     db.add_all(bridges)
     db.commit()
 
+    seed_corridors_data(db)
+    seed_master_scenario_data(db)
+    AccessibilityEngine.recalculate_all_accessibility(db)
+    print("Database initial seeding completed successfully.")
+    db.close()
+
+def seed_corridors_data(db):
+    corridor_seeds = [
+        {
+            "corridor_code": "COR-NH27",
+            "name": "NH-27 East-West National Expressway & Highway",
+            "origin": "Siliguri",
+            "destination": "Dimapur",
+            "states_covered": "West Bengal, Assam, Nagaland",
+            "status": "OPEN",
+            "accessibility_status": "OPEN",
+            "risk_level": "LOW",
+            "current_condition": "4-Lane Divided Expressway with normal flow",
+            "weather_condition": "Clear / Partly Cloudy",
+            "estimated_delay_mins": 0,
+            "incident_count": 0,
+            "data_source": "INTEGRATED_ACCESSIBILITY_ENGINE",
+            "data_sources": json.dumps(["Open-Meteo Live API", "NHAI Highway ATMS", "BRO Bridge Clearance Registry"]),
+            "factor_summary": "Optimal 4-lane cruising conditions",
+            "polyline_coords": json.dumps([
+                [26.7271, 88.3953], [26.5400, 88.7200], [26.3300, 89.4500], [26.4700, 89.9800],
+                [26.4800, 90.2700], [26.5000, 90.5400], [26.2000, 90.5700], [26.1500, 91.2000],
+                [26.1445, 91.7362], [26.1600, 92.0000], [26.1800, 92.4000], [26.1500, 92.7000],
+                [25.8800, 93.1800], [25.9090, 93.7266]
+            ])
+        },
+        {
+            "corridor_code": "COR-NH37",
+            "name": "NH-37 Brahmaputra Valley & Southern Arterial",
+            "origin": "Goalpara",
+            "destination": "Dibrugarh",
+            "states_covered": "Assam",
+            "status": "OPEN",
+            "accessibility_status": "OPEN",
+            "risk_level": "LOW",
+            "current_condition": "Smooth trunk road passage through Brahmaputra valley",
+            "weather_condition": "Moderate Overcast",
+            "estimated_delay_mins": 10,
+            "incident_count": 0,
+            "data_source": "INTEGRATED_ACCESSIBILITY_ENGINE",
+            "data_sources": json.dumps(["Open-Meteo Live API", "Assam PWD Road Telemetry", "NHIDCL Monitored Sensor"]),
+            "factor_summary": "Normal road and bridge passage",
+            "polyline_coords": json.dumps([
+                [26.1700, 90.6200], [26.1445, 91.7362], [26.5800, 92.9500], [26.6000, 93.3000],
+                [26.5500, 93.7500], [26.7500, 94.2200], [26.9800, 94.6400], [27.4728, 94.9120],
+                [27.5000, 95.3500], [27.7950, 95.6620]
+            ])
+        },
+        {
+            "corridor_code": "COR-NH37-EXT",
+            "name": "NH-37 Silchar - Jiribam - Imphal Lifeline Highway",
+            "origin": "Silchar",
+            "destination": "Imphal",
+            "states_covered": "Assam, Manipur",
+            "status": "OPEN",
+            "accessibility_status": "OPEN",
+            "risk_level": "LOW",
+            "current_condition": "Operational heavy logistics bypass via Jiribam and Noney",
+            "weather_condition": "Light Showers",
+            "estimated_delay_mins": 15,
+            "incident_count": 0,
+            "data_source": "INTEGRATED_ACCESSIBILITY_ENGINE",
+            "data_sources": json.dumps(["Open-Meteo Live API", "BRO Project Udayak", "Field Officer Inspection Incident Feed"]),
+            "factor_summary": "Operational Western mountain bypass",
+            "polyline_coords": json.dumps([
+                [24.8333, 92.7789], [24.8012, 93.1250], [24.7800, 93.3500], [24.8500, 93.5000],
+                [24.8700, 93.7200], [24.8170, 93.9368]
+            ])
+        },
+        {
+            "corridor_code": "COR-NH2",
+            "name": "NH-2 / AH-1 Asian Highway Trunk (Dibrugarh - Dimapur - Kohima - Imphal)",
+            "origin": "Dibrugarh",
+            "destination": "Imphal",
+            "states_covered": "Assam, Nagaland, Manipur",
+            "status": "OPEN",
+            "accessibility_status": "OPEN",
+            "risk_level": "LOW",
+            "current_condition": "Asian Highway corridor operational through Kohima pass",
+            "weather_condition": "Intermittent Mist",
+            "estimated_delay_mins": 20,
+            "incident_count": 0,
+            "data_source": "INTEGRATED_ACCESSIBILITY_ENGINE",
+            "data_sources": json.dumps(["Open-Meteo Live API", "NHIDCL Mountain Highway Feed", "State Disaster Authority"]),
+            "factor_summary": "Standard transit profile with mountain monitoring",
+            "polyline_coords": json.dumps([
+                [27.4728, 94.9120], [26.9800, 94.6400], [26.7000, 94.2000], [25.9090, 93.7266],
+                [25.7900, 93.9500], [25.6751, 94.1086], [25.4500, 94.0800], [25.2000, 94.0200],
+                [25.0500, 93.9800], [24.8170, 93.9368]
+            ])
+        },
+        {
+            "corridor_code": "COR-NH10",
+            "name": "NH-10 Himalayan Mountain Lifeline (Siliguri - Gangtok)",
+            "origin": "Siliguri",
+            "destination": "Gangtok",
+            "states_covered": "West Bengal, Sikkim",
+            "status": "RESTRICTED",
+            "accessibility_status": "RESTRICTED",
+            "risk_level": "HIGH",
+            "current_condition": "Teesta River gorge section under active slope alert; 20T load limit",
+            "weather_condition": "Heavy Mountain Rain",
+            "estimated_delay_mins": 55,
+            "incident_count": 1,
+            "data_source": "INTEGRATED_ACCESSIBILITY_ENGINE",
+            "data_sources": json.dumps(["Open-Meteo Live API", "BRO Project Swastik", "Field Officer Inspection Incident Feed"]),
+            "factor_summary": "Heavy rain + Teesta gorge load restriction",
+            "polyline_coords": json.dumps([
+                [26.7271, 88.3953], [26.8800, 88.4700], [26.9500, 88.4400], [27.0500, 88.4700],
+                [27.1700, 88.5200], [27.2400, 88.5800], [27.3000, 88.6000], [27.3389, 88.6138]
+            ])
+        },
+        {
+            "corridor_code": "COR-NH40",
+            "name": "NH-6 / NH-40 Trans-Meghalaya & Barak Valley Corridor",
+            "origin": "Guwahati",
+            "destination": "Silchar",
+            "states_covered": "Assam, Meghalaya",
+            "status": "OPEN",
+            "accessibility_status": "OPEN",
+            "risk_level": "LOW",
+            "current_condition": "4-Lane Expressway to Shillong with 2-lane link to Jowai",
+            "weather_condition": "Clear / Moderate Mist",
+            "estimated_delay_mins": 10,
+            "incident_count": 0,
+            "data_source": "INTEGRATED_ACCESSIBILITY_ENGINE",
+            "data_sources": json.dumps(["Open-Meteo Live API", "NHAI 4-Lane ATMS", "Meghalaya PWD"]),
+            "factor_summary": "Normal road and bridge passage",
+            "polyline_coords": json.dumps([
+                [26.0825, 91.8682], [25.9034, 91.8796], [25.7516, 91.8950], [25.6631, 91.9022],
+                [25.5788, 91.8933], [25.4400, 92.2000], [25.2600, 92.3700], [25.1000, 92.4800],
+                [24.8333, 92.7789]
+            ])
+        },
+        {
+            "corridor_code": "COR-NH8",
+            "name": "NH-8 Southern Tripura National Arterial (Karimganj - Agartala - Sabroom)",
+            "origin": "Karimganj",
+            "destination": "Sabroom",
+            "states_covered": "Assam, Tripura",
+            "status": "OPEN",
+            "accessibility_status": "OPEN",
+            "risk_level": "LOW",
+            "current_condition": "Smooth inter-state logistics flow into Agartala and Maitri Setu",
+            "weather_condition": "Partly Cloudy",
+            "estimated_delay_mins": 0,
+            "incident_count": 0,
+            "data_source": "INTEGRATED_ACCESSIBILITY_ENGINE",
+            "data_sources": json.dumps(["Open-Meteo Live API", "Tripura Transport Department", "NHIDCL"]),
+            "factor_summary": "Unrestricted arterial transit",
+            "polyline_coords": json.dumps([
+                [24.8700, 92.3500], [24.5200, 92.2300], [24.3800, 92.1600], [24.1800, 92.0100],
+                [23.8400, 91.6000], [23.8315, 91.2868], [23.5400, 91.4500], [23.2200, 91.5000],
+                [23.0030, 91.7050]
+            ])
+        },
+        {
+            "corridor_code": "COR-NH13",
+            "name": "NH-13 Trans-Arunachal Strategic Highway",
+            "origin": "Tawang",
+            "destination": "Tezu",
+            "states_covered": "Arunachal Pradesh",
+            "status": "OPEN",
+            "accessibility_status": "OPEN",
+            "risk_level": "LOW",
+            "current_condition": "Sela Tunnel pass and foothills sectors open to all traffic",
+            "weather_condition": "Alpine Fog",
+            "estimated_delay_mins": 25,
+            "incident_count": 0,
+            "data_source": "INTEGRATED_ACCESSIBILITY_ENGINE",
+            "data_sources": json.dumps(["Open-Meteo Live API", "BRO Project Arunank", "Arunachal Police Traffic Feed"]),
+            "factor_summary": "All-weather high mountain clearance",
+            "polyline_coords": json.dumps([
+                [27.5860, 91.8590], [27.5000, 92.1000], [27.2600, 92.4200], [27.0844, 93.6053],
+                [27.3500, 94.1000], [28.0600, 95.3200], [28.1500, 95.8300], [27.9100, 96.1600],
+                [27.7700, 96.3500]
+            ])
+        },
+        {
+            "corridor_code": "COR-NH15",
+            "name": "NH-15 Brahmaputra North Bank Strategic Highway",
+            "origin": "Baihata Chariali",
+            "destination": "Jonai",
+            "states_covered": "Assam, Arunachal Pradesh",
+            "status": "OPEN",
+            "accessibility_status": "OPEN",
+            "risk_level": "LOW",
+            "current_condition": "Multi-lane paved highway across northern Brahmaputra plain",
+            "weather_condition": "Clear",
+            "estimated_delay_mins": 0,
+            "incident_count": 0,
+            "data_source": "INTEGRATED_ACCESSIBILITY_ENGINE",
+            "data_sources": json.dumps(["Open-Meteo Live API", "NHAI North Bank ATMS"]),
+            "factor_summary": "Optimal transit clearance",
+            "polyline_coords": json.dumps([
+                [26.3500, 91.7100], [26.4300, 92.0300], [26.7000, 92.8000], [26.8500, 93.6000],
+                [27.2300, 94.1000], [27.3980, 94.8250], [27.4800, 94.5800], [27.7900, 95.2000]
+            ])
+        },
+        {
+            "corridor_code": "COR-NH102",
+            "name": "NH-102 Asian Highway (Imphal - Moreh International Border)",
+            "origin": "Imphal",
+            "destination": "Moreh",
+            "states_covered": "Manipur",
+            "status": "OPEN",
+            "accessibility_status": "OPEN",
+            "risk_level": "LOW",
+            "current_condition": "International trilateral link fully accessible for freight movement",
+            "weather_condition": "Sunny",
+            "estimated_delay_mins": 0,
+            "incident_count": 0,
+            "data_source": "INTEGRATED_ACCESSIBILITY_ENGINE",
+            "data_sources": json.dumps(["Open-Meteo Live API", "NHIDCL Trilateral Link Monitor"]),
+            "factor_summary": "Border ICP transport clearance normal",
+            "polyline_coords": json.dumps([
+                [24.8170, 93.9368], [24.6300, 93.9900], [24.4800, 93.9800], [24.4500, 94.0200],
+                [24.3800, 94.1500], [24.2400, 94.3000]
+            ])
+        },
+        {
+            "corridor_code": "COR-NH29",
+            "name": "NH-29 Dimapur - Kohima High-Speed Mountain Expressway",
+            "origin": "Dimapur",
+            "destination": "Kohima",
+            "states_covered": "Nagaland",
+            "status": "OPEN",
+            "accessibility_status": "OPEN",
+            "risk_level": "LOW",
+            "current_condition": "4-Lane mountain expressway with structural slope stabilization",
+            "weather_condition": "Light Overcast",
+            "estimated_delay_mins": 5,
+            "incident_count": 0,
+            "data_source": "INTEGRATED_ACCESSIBILITY_ENGINE",
+            "data_sources": json.dumps(["Open-Meteo Live API", "NHIDCL Nagaland Smart Toll", "Field Officer Inspection Incident Feed"]),
+            "factor_summary": "4-Lane high-speed mountain transit clear",
+            "polyline_coords": json.dumps([
+                [25.9090, 93.7266], [25.8500, 93.8200], [25.7500, 93.9500], [25.7000, 94.0200],
+                [25.6751, 94.1086]
+            ])
+        },
+        {
+            "corridor_code": "COR-NH54",
+            "name": "NH-54 / NH-306 Central Mizoram Spine (Silchar - Aizawl - Lunglei)",
+            "origin": "Silchar",
+            "destination": "Lunglei",
+            "states_covered": "Assam, Mizoram",
+            "status": "RESTRICTED",
+            "accessibility_status": "RESTRICTED",
+            "risk_level": "MEDIUM",
+            "current_condition": "Monsoon mudslides near Vairengte sector; slow transit",
+            "weather_condition": "Heavy Rain",
+            "estimated_delay_mins": 45,
+            "incident_count": 1,
+            "data_source": "INTEGRATED_ACCESSIBILITY_ENGINE",
+            "data_sources": json.dumps(["Open-Meteo Live API", "Mizoram PWD", "Field Officer Inspection Incident Feed"]),
+            "factor_summary": "Heavy rain + Vairengte mudslide advisory",
+            "polyline_coords": json.dumps([
+                [24.8333, 92.7789], [24.5000, 92.7600], [24.2200, 92.6800], [23.7307, 92.7173],
+                [23.4000, 92.7500], [22.8800, 92.7300]
+            ])
+        },
+        {
+            "corridor_code": "COR-NH415",
+            "name": "NH-415 Banderdewa - Itanagar Arterial Highway",
+            "origin": "Banderdewa",
+            "destination": "Itanagar",
+            "states_covered": "Assam, Arunachal Pradesh",
+            "status": "OPEN",
+            "accessibility_status": "OPEN",
+            "risk_level": "LOW",
+            "current_condition": "Clear traffic passage into Itanagar capital complex",
+            "weather_condition": "Light Rain",
+            "estimated_delay_mins": 15,
+            "incident_count": 0,
+            "data_source": "INTEGRATED_ACCESSIBILITY_ENGINE",
+            "data_sources": json.dumps(["Open-Meteo Live API", "BRO Dikrong Telemetry"]),
+            "factor_summary": "Normal hill route passage",
+            "polyline_coords": json.dumps([
+                [27.1200, 93.8200], [27.1000, 93.7200], [27.0844, 93.6053]
+            ])
+        },
+        {
+            "corridor_code": "COR-NH44",
+            "name": "NH-44 Shillong - Silchar - Agartala Logistics Highway",
+            "origin": "Shillong",
+            "destination": "Agartala",
+            "states_covered": "Meghalaya, Assam, Tripura",
+            "status": "OPEN",
+            "accessibility_status": "OPEN",
+            "risk_level": "LOW",
+            "current_condition": "Smooth transport movement",
+            "weather_condition": "Partly Cloudy",
+            "estimated_delay_mins": 0,
+            "incident_count": 0,
+            "data_source": "INTEGRATED_ACCESSIBILITY_ENGINE",
+            "data_sources": json.dumps(["Open-Meteo Live API", "Howrah River Bridge Registry"]),
+            "factor_summary": "Normal road and bridge passage",
+            "polyline_coords": json.dumps([
+                [25.5788, 91.8933], [25.4400, 92.2000], [24.8333, 92.7789], [23.8315, 91.2868]
+            ])
+        },
+        {
+            "corridor_code": "COR-NH106-BYPASS",
+            "name": "NH106 Eastern Bypass (Guwahati - Jagiroad - Bhoirymbong - Shillong)",
+            "origin": "Guwahati",
+            "destination": "Shillong",
+            "states_covered": "Assam, Meghalaya",
+            "status": "OPEN",
+            "accessibility_status": "OPEN",
+            "risk_level": "LOW",
+            "current_condition": "Operational 2-lane hill detour route with all-weather bridge clearance",
+            "weather_condition": "Clear",
+            "estimated_delay_mins": 0,
+            "incident_count": 0,
+            "data_source": "INTEGRATED_ACCESSIBILITY_ENGINE",
+            "data_sources": json.dumps(["Open-Meteo Live API", "NHIDCL Eastern Bypass Registry"]),
+            "factor_summary": "Unrestricted strategic bypass clearance",
+            "polyline_coords": json.dumps(ALTERNATE_GUWAHATI_SHILLONG_WAYPOINTS)
+        }
+    ]
+
+    for c_data in corridor_seeds:
+        cor = db.query(Corridor).filter(Corridor.corridor_code == c_data["corridor_code"]).first()
+        if not cor:
+            cor = Corridor(**c_data)
+            db.add(cor)
+        else:
+            if not cor.polyline_coords or len(cor.polyline_coords) < 10:
+                cor.polyline_coords = c_data["polyline_coords"]
+            if not cor.accessibility_status:
+                cor.accessibility_status = c_data["accessibility_status"]
+            if not cor.data_sources:
+                cor.data_sources = c_data["data_sources"]
+            if not cor.factor_summary:
+                cor.factor_summary = c_data["factor_summary"]
+    db.commit()
+
 if __name__ == "__main__":
     seed_database()
+

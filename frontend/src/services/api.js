@@ -48,6 +48,7 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token =
+      localStorage.getItem('ner88_token') ||
       localStorage.getItem('link_x8_token') ||
       localStorage.getItem('ner_logiai_token');
     if (token) {

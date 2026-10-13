@@ -61,7 +61,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from app.main import app
 from app.database.database import get_db
-from app.models.models import Alert, Corridor, District, Incident, Delivery, Bridge
+from app.models.models import Alert, Corridor, District, Incident, Delivery, Bridge, FieldReport
 
 client = TestClient(app)
 
@@ -1056,6 +1056,14 @@ def test_regression_field_reports_sync():
     data = res.json()
     assert data["status"] == "SUCCESS"
     assert data["synced_count"] >= 1
+
+    db = get_db_session()
+    try:
+        db.query(FieldReport).filter(FieldReport.report_code == "FR-REG-TEST-001").delete()
+        db.query(Incident).filter(Incident.description.like("%FR-REG-TEST-001%")).delete()
+        db.commit()
+    finally:
+        db.close()
 
 
 def test_regression_ml_predict():

@@ -1,471 +1,200 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import {
-  Truck, Mail, Phone, ArrowRight, Loader2, AlertCircle,
-  CheckCircle2, Shield, MapPin, Activity
-} from 'lucide-react';
+import govEmblem from '../assets/gov-emblem.png';
+import { Loader2, AlertCircle } from 'lucide-react';
 
-// ─── Northeast India SVG Map Silhouette ─────────────────────────────────────
-const NEIndiaMap = () => (
-  <svg
-    viewBox="0 0 520 420"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    className="w-full h-full"
-    aria-hidden="true"
-  >
-    {/* Subtle geographic contour / route network lines */}
-    <g opacity="0.12" stroke="#8B5CF6" strokeWidth="0.8" fill="none">
-      {/* Outer boundary — NE India rough silhouette */}
-      <path d="M 80 200 C 100 150, 140 120, 180 110 C 220 100, 250 90, 290 95 C 330 100, 360 115, 385 130 C 410 145, 420 165, 415 190 C 410 215, 395 235, 375 255 C 355 275, 330 290, 300 300 C 270 310, 240 315, 210 310 C 180 305, 155 290, 135 270 C 115 250, 90 235, 80 200 Z" />
-      {/* Inner contour 1 */}
-      <path d="M 100 200 C 118 158, 152 128, 188 118 C 224 108, 252 98, 288 103 C 324 108, 352 122, 374 136 C 396 150, 405 168, 400 192 C 395 216, 381 235, 362 253 C 343 271, 319 285, 291 294 C 263 303, 235 308, 207 303 C 179 298, 155 283, 137 265 C 119 247, 100 235, 100 200 Z" />
-      {/* Inner contour 2 */}
-      <path d="M 120 200 C 135 166, 164 138, 196 128 C 228 118, 254 108, 287 112 C 320 116, 346 129, 365 143 C 384 157, 391 173, 387 195 C 383 217, 370 234, 352 251 C 334 268, 311 281, 284 289 C 257 297, 231 301, 205 296 C 179 291, 157 277, 140 261 C 123 245, 108 228, 120 200 Z" />
-    </g>
-
-    {/* Route network lines */}
-    <g opacity="0.18" stroke="#14B8A6" strokeWidth="1" fill="none">
-      {/* NH-37 Assam corridor */}
-      <path d="M 90 195 C 140 185, 200 178, 260 182 C 320 186, 370 195, 405 205" strokeDasharray="4 3" />
-      {/* NH-40 Meghalaya */}
-      <path d="M 140 230 C 175 215, 215 208, 255 212 C 295 216, 330 228, 360 240" strokeDasharray="4 3" />
-      {/* NH-54 Silchar */}
-      <path d="M 200 280 C 230 265, 260 255, 295 258 C 330 261, 355 272, 375 285" strokeDasharray="4 3" />
-      {/* NH-2 Manipur */}
-      <path d="M 280 140 C 290 165, 295 195, 292 225 C 289 255, 280 278, 270 298" strokeDasharray="4 3" />
-      {/* NH-62 Arunachal */}
-      <path d="M 330 120 C 345 145, 355 170, 358 200 C 361 230, 355 258, 345 280" strokeDasharray="4 3" />
-      {/* Cross route */}
-      <path d="M 150 165 C 200 170, 255 175, 305 178 C 345 181, 380 178, 410 175" strokeDasharray="3 4" />
-    </g>
-
-    {/* Location dots — major cities */}
-    <g opacity="0.45">
-      {/* Guwahati */}
-      <circle cx="170" cy="185" r="4" fill="#8B5CF6" />
-      <circle cx="170" cy="185" r="7" fill="none" stroke="#8B5CF6" strokeWidth="1" opacity="0.5" />
-      {/* Shillong */}
-      <circle cx="200" cy="230" r="3" fill="#14B8A6" />
-      <circle cx="200" cy="230" r="6" fill="none" stroke="#14B8A6" strokeWidth="1" opacity="0.5" />
-      {/* Imphal */}
-      <circle cx="295" cy="258" r="3" fill="#8B5CF6" />
-      {/* Agartala */}
-      <circle cx="230" cy="280" r="3" fill="#14B8A6" />
-      {/* Itanagar */}
-      <circle cx="320" cy="145" r="3" fill="#8B5CF6" />
-      {/* Dibrugarh */}
-      <circle cx="370" cy="175" r="3" fill="#14B8A6" />
-      {/* Aizawl */}
-      <circle cx="275" cy="295" r="3" fill="#8B5CF6" />
-      {/* Kohima */}
-      <circle cx="340" cy="215" r="3" fill="#14B8A6" />
-    </g>
-
-    {/* State labels — very faint */}
-    <g opacity="0.2" fill="#E2D9F3" fontFamily="Inter, sans-serif" fontSize="8" fontWeight="600">
-      <text x="155" y="182">AS</text>
-      <text x="195" y="228">ML</text>
-      <text x="290" y="255">MN</text>
-      <text x="225" y="280">TR</text>
-      <text x="315" y="145">AR</text>
-      <text x="365" y="178">AS</text>
-      <text x="270" y="296">MZ</text>
-      <text x="338" y="215">NL</text>
-    </g>
-
-    {/* Animated pulse on Guwahati */}
-    <circle cx="170" cy="185" r="10" fill="none" stroke="#8B5CF6" strokeWidth="0.8" opacity="0.3">
-      <animate attributeName="r" from="10" to="22" dur="2.5s" repeatCount="indefinite" />
-      <animate attributeName="opacity" from="0.4" to="0" dur="2.5s" repeatCount="indefinite" />
-    </circle>
-  </svg>
-);
-
-// ─── OTP Input ───────────────────────────────────────────────────────────────
-const OTPInput = ({ value, onChange }) => {
-  const digits = value.split('').concat(Array(6).fill('')).slice(0, 6);
-
-  const handleKey = (e, idx) => {
-    const key = e.key;
-    if (key === 'Backspace') {
-      const newVal = value.slice(0, -1);
-      onChange(newVal);
-      if (idx > 0) {
-        document.getElementById(`otp-${idx - 1}`)?.focus();
-      }
-      return;
-    }
-    if (/^[0-9]$/.test(key)) {
-      if (value.length < 6) {
-        const newVal = value + key;
-        onChange(newVal);
-        if (idx < 5 && newVal.length <= 6) {
-          document.getElementById(`otp-${idx + 1}`)?.focus();
-        }
-      }
-    }
-  };
-
-  return (
-    <div className="flex gap-2 justify-center">
-      {digits.map((d, i) => (
-        <input
-          key={i}
-          id={`otp-${i}`}
-          type="text"
-          inputMode="numeric"
-          maxLength={1}
-          value={d}
-          readOnly
-          onKeyDown={(e) => handleKey(e, i)}
-          onFocus={() => document.getElementById(`otp-${i}`)?.select()}
-          className="w-10 h-11 text-center text-base font-extrabold bg-[#F7F7FB] border-2 border-[#E5E7EB] rounded-xl text-[#1F2937] focus:outline-none focus:border-[#8B5CF6] transition-colors duration-150 cursor-text"
-          style={{ caretColor: 'transparent' }}
-        />
-      ))}
-    </div>
-  );
+const s = {
+  page: { fontFamily: "'Noto Sans', 'Open Sans', Arial, sans-serif", background: '#f0f4f8', minHeight: '100vh', display: 'flex', flexDirection: 'column', color: '#1a1a1a' },
+  breadcrumb: { background: '#fff', borderBottom: '1px solid #dde3ec', padding: '8px 32px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: '#555' },
+  breadHome: { color: '#155724', cursor: 'pointer', fontWeight: 500 },
+  content: { flex: 1, padding: '32px 32px 40px', maxWidth: 780, width: '100%', margin: '0 auto' },
+  pageTitle: { fontSize: 22, fontWeight: 700, color: '#155724', marginBottom: 20 },
+  tabs: { display: 'flex', borderBottom: '1px solid #c8d3e0', marginBottom: 28 },
+  tab: { padding: '9px 18px', fontSize: 13, fontWeight: 500, color: '#444', cursor: 'pointer', background: '#e8edf3', border: '1px solid #c8d3e0', borderBottom: 'none', marginRight: 3, borderRadius: '4px 4px 0 0', userSelect: 'none' },
+  tabActive: { background: '#155724', color: '#fff', border: '1px solid #155724', borderBottom: 'none', fontWeight: 600 },
+  form: { maxWidth: 600 },
+  fieldGroup: { marginBottom: 18 },
+  label: { display: 'block', fontSize: 13.5, fontWeight: 600, color: '#222', marginBottom: 5 },
+  required: { color: '#c0392b', marginLeft: 2 },
+  input: { display: 'block', width: '100%', padding: '7px 10px', fontSize: 13.5, border: '1px solid #aab4c4', borderRadius: 3, background: '#fff', color: '#1a1a1a', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' },
+  hint: { display: 'block', fontSize: 12, color: '#666', marginTop: 4, lineHeight: 1.4 },
+  btnBlue: { display: 'inline-flex', alignItems: 'center', gap: 6, background: '#155724', color: '#fff', border: 'none', borderRadius: 3, padding: '8px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: 0.5, textTransform: 'uppercase', marginTop: 4 },
+  error: { display: 'flex', alignItems: 'flex-start', gap: 8, background: '#fdf2f2', border: '1px solid #e8b4b4', borderRadius: 3, padding: '10px 14px', fontSize: 13, color: '#a00', marginBottom: 18, maxWidth: 600 },
+  quickPanel: { background: '#fff', border: '1px solid #c8d3e0', borderRadius: 4, padding: '20px 24px', maxWidth: 600 },
+  quickTitle: { fontSize: 13, fontWeight: 700, color: '#155724', marginBottom: 14, textTransform: 'uppercase', letterSpacing: 0.5 },
+  quickGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 },
+  quickBtn: { background: '#f0f4f8', border: '1px solid #c8d3e0', borderRadius: 3, padding: '10px 14px', fontSize: 12.5, fontWeight: 600, color: '#1a1a1a', cursor: 'pointer', textAlign: 'left', lineHeight: 1.4 },
+  footer: { background: '#1a1a2e', padding: '14px 32px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 18, flexWrap: 'wrap' },
+  footerLink: { color: '#aab4c4', fontSize: 12, cursor: 'pointer' },
+  footerSep: { color: '#444', fontSize: 11 },
 };
 
-// ─── Main Login Component ─────────────────────────────────────────────────────
+const TABS = ['Log In', 'Create Account', 'Forgot Password'];
+const QUICK_USERS = [
+  { label: 'System Administrator', role: 'Admin', email: 'admin@ner88.gov.in', pass: 'Admin@123' },
+  { label: 'Duty Dispatcher', role: 'Dispatcher', email: 'dispatcher@ner88.gov.in', pass: 'Dispatch@123' },
+  { label: 'Field Inspector', role: 'Field Officer', email: 'field@ner88.gov.in', pass: 'Field@123' },
+  { label: 'Public Observer', role: 'Viewer', email: 'viewer@ner88.gov.in', pass: 'Viewer@123' },
+];
+
 export const Login = () => {
-  const { login, loginWithMobile, loginWithGoogle } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
-
-  // Tab: 'mobile' | 'email'
-  const [tab, setTab] = useState('email');
-
-  // Email fields
+  const [activeTab, setActiveTab] = useState(0);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
-  // Mobile fields
-  const [mobile, setMobile] = useState('');
-  const [otpStep, setOtpStep] = useState(false);
-  const [otp, setOtp] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-
-  // States
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const [focusEmail, setFocusEmail] = useState(false);
+  const [focusPass, setFocusPass] = useState(false);
 
-  // ── Auto-login for ?demo=true bypass URL ──
-  React.useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('demo') === 'true') {
-      handleDemoLogin('dispatcher@linkx8.in', 'Dispatch@123');
-    }
-  }, []);
-
-  // ── Validation ──
-  const validateEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-  const validateMobile = (v) => /^[6-9]\d{9}$/.test(v.replace(/\s/g, ''));
-
-  // ── Email Submit ──
-  const handleEmailSubmit = async (e) => {
-    e.preventDefault();
+  const doLogin = async (emailVal, passVal) => {
     setError('');
-    if (!validateEmail(email)) { setError('Please enter a valid email address.'); return; }
-    if (!password || password.length < 4) { setError('Please enter your password.'); return; }
     setLoading(true);
     try {
-      const result = await login(email, password);
-      if (result?.success) {
-        setSuccess(true);
-        setTimeout(() => navigate('/welcome'), 600);
-      } else {
-        setError(result?.error || 'Authentication failed. Please check your credentials.');
-      }
-    } catch {
-      setError('An error occurred. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+      const result = await login(emailVal.trim(), passVal);
+      if (result?.success) { navigate('/command-center'); }
+      else { setError(result?.error || 'Authentication failed. Please verify your credentials.'); }
+    } catch { setError('Authentication service unreachable. Please check your connection.'); }
+    finally { setLoading(false); }
   };
 
-  // ── Mobile: Send OTP ──
-  const handleSendOtp = async (e) => {
-    e.preventDefault();
-    setError('');
-    const cleaned = mobile.replace(/\s/g, '');
-    if (!validateMobile(cleaned)) { setError('Enter a valid 10-digit mobile number.'); return; }
-    setLoading(true);
-    // Simulate OTP send (real integration would call backend)
-    await new Promise(r => setTimeout(r, 1200));
-    setOtpSent(true);
-    setOtpStep(true);
-    setLoading(false);
-  };
-
-  // ── Mobile: Verify OTP ──
-  const handleVerifyOtp = async (e) => {
-    e.preventDefault();
-    setError('');
-    if (otp.length !== 6) { setError('Please enter the 6-digit OTP.'); return; }
-    setLoading(true);
-    await new Promise(r => setTimeout(r, 900));
-    try {
-      const result = await loginWithMobile(mobile.replace(/\s/g, ''));
-      if (result?.success) {
-        setSuccess(true);
-        setTimeout(() => navigate('/welcome'), 600);
-      } else {
-        setError('OTP verification failed. Please try again.');
-      }
-    } catch {
-      setError('An error occurred. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ── Quick Demo Login ──
-  const handleDemoLogin = async (demoEmail, demoPassword) => {
-    setLoading(true);
-    setError('');
-    setTab('email');
-    setEmail(demoEmail);
-    setPassword(demoPassword);
-    await new Promise(r => setTimeout(r, 400));
-    const result = await login(demoEmail, demoPassword);
-    if (result?.success) {
-      setSuccess(true);
-      setTimeout(() => navigate('/welcome'), 600);
-    }
-    setLoading(false);
-  };
+  const handleSubmit = (e) => { e.preventDefault(); if (!email.trim()) { setError('Please enter your username or email.'); return; } if (!password) { setError('Please enter your password.'); return; } doLogin(email, password); };
 
   return (
-    <div className="min-h-screen flex bg-[#F7F7FB] font-sans">
-
-      {/* ── LEFT PANEL ── */}
-      <div className="hidden lg:flex lg:w-[52%] xl:w-[55%] flex-col bg-[#171329] relative overflow-hidden">
-
-        {/* Gradient overlay layer */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#171329] via-[#1E1540] to-[#1A1535] pointer-events-none" />
-
-        {/* Subtle top accent stripe */}
-        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#6D28D9] via-[#8B5CF6] to-[#14B8A6] opacity-70" />
-
-        {/* Content */}
-        <div className="relative z-10 flex flex-col h-full p-10 xl:p-14">
-
-          {/* Brand mark */}
-          <div className="flex items-center gap-3 mb-auto">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#6D28D9] via-[#8B5CF6] to-[#14B8A6] flex items-center justify-center shadow-lg flex-shrink-0">
-              <Truck className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <div className="text-white font-extrabold text-xl tracking-tight leading-none">LINK X8</div>
-              <div className="text-purple-300/70 text-[11px] font-medium mt-0.5">Regional Logistics Intelligence</div>
-            </div>
-          </div>
-
-          {/* Center: Map + headline */}
-          <div className="flex-1 flex flex-col justify-center gap-8">
-            {/* NE India map silhouette */}
-            <div className="w-full max-w-sm mx-auto opacity-90">
-              <NEIndiaMap />
-            </div>
-
-            <div className="space-y-3 max-w-sm mx-auto text-center">
-              <h1 className="text-3xl xl:text-4xl font-extrabold text-white leading-tight tracking-tight">
-                Regional Logistics &{' '}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#8B5CF6] to-[#14B8A6]">
-                  Accessibility
-                </span>{' '}
-                Command Center
-              </h1>
-              <p className="text-purple-200/60 text-sm leading-relaxed">
-                AI-powered logistics, route, accessibility, weather and risk intelligence
-                for the North Eastern Region of India.
-              </p>
-            </div>
-
-            {/* Stats row */}
-            <div className="flex items-center gap-4 max-w-sm mx-auto w-full">
-              {[
-                { icon: MapPin, label: '8 States', sub: 'Monitored' },
-                { icon: Activity, label: 'Real-time', sub: 'Intelligence' },
-                { icon: Shield, label: 'MDoNER', sub: 'Prototype' },
-              ].map(({ icon: Icon, label, sub }) => (
-                <div key={label} className="flex-1 bg-[#231C3D]/60 border border-[#2A2447] rounded-xl p-3 text-center">
-                  <Icon className="w-4 h-4 text-[#8B5CF6] mx-auto mb-1" />
-                  <div className="text-white font-bold text-xs leading-none">{label}</div>
-                  <div className="text-purple-300/60 text-[10px] mt-0.5">{sub}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="mt-auto pt-8 border-t border-[#2A2447]">
-            <div className="flex items-center gap-2 text-purple-300/40 text-[10px]">
-              <span className="px-2 py-0.5 bg-[#231C3D] border border-[#2A2447] rounded-md font-bold text-purple-300/60">SIH26002</span>
-              <span>•</span>
-              <span>Ministry of Development of North Eastern Region</span>
-            </div>
+    <div style={s.page}>
+      {/* Institutional Government Header */}
+      <header style={{ background: '#fff', borderBottom: '2px solid #155724', padding: '12px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer' }} onClick={() => navigate('/welcome')}>
+          <img src={govEmblem} alt="Emblem of India" style={{ height: 52, width: 52, objectFit: 'contain' }} />
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: 11.5, color: '#666', letterSpacing: 0.3 }}>Government of India</span>
+            <span style={{ fontSize: 16, fontWeight: 800, color: '#155724', letterSpacing: -0.3 }}>
+              NER88 — North East Region Logistics Command
+            </span>
           </div>
         </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button style={{ background: 'none', border: '1px solid #155724', color: '#155724', borderRadius: 4, padding: '6px 16px', fontWeight: 600, fontSize: 12.5, cursor: 'pointer' }} onClick={() => navigate('/welcome')}>
+            ← Return to Overview
+          </button>
+        </div>
+      </header>
+
+      <div style={s.breadcrumb}>
+        <span>🏠</span>
+        <span style={s.breadHome} onClick={() => navigate('/welcome')}>Home</span>
+        <span style={{ color: '#999' }}>›</span>
+        <span style={{ color: '#333', fontWeight: 500 }}>User Account</span>
       </div>
 
-      {/* ── RIGHT PANEL — Auth Card ── */}
-      <div className="flex-1 flex flex-col items-center justify-center p-5 sm:p-8 relative">
+      <div style={s.content}>
+        <h1 style={s.pageTitle}>User account</h1>
 
-        {/* Mobile top brand */}
-        <div className="lg:hidden flex items-center gap-2.5 mb-8 self-start">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#6D28D9] via-[#8B5CF6] to-[#14B8A6] flex items-center justify-center shadow-md">
-            <Truck className="w-4.5 h-4.5 text-white" />
-          </div>
-          <div>
-            <div className="font-extrabold text-[#1F2937] text-base tracking-tight">LINK X8</div>
-            <div className="text-[#6B7280] text-[10px] font-medium">Regional Logistics Intelligence</div>
-          </div>
+        <div style={s.tabs}>
+          {TABS.map((tab, i) => (
+            <div key={tab} style={{ ...s.tab, ...(activeTab === i ? s.tabActive : {}) }}
+              onClick={() => { setActiveTab(i); setError(''); }}>{tab}</div>
+          ))}
         </div>
 
-        {/* Auth card */}
-        <div className="w-full max-w-md">
-          {/* Card header */}
-          <div className="mb-7">
-            <h2 className="text-2xl font-extrabold text-[#1F2937] tracking-tight leading-tight">
-              Welcome to LINK X8
-            </h2>
-            <p className="text-[#6B7280] text-sm mt-1.5 leading-relaxed">
-              Access the Regional Logistics &amp; Accessibility Command Center.
-            </p>
-          </div>
-
-          {/* ── EMAIL FORM ── */}
-          <form onSubmit={handleEmailSubmit} className="space-y-4" noValidate>
-              <div>
-                <label htmlFor="login-email" className="text-xs font-bold text-[#1F2937] block mb-1.5">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 text-[#6B7280] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    id="login-email"
-                    type="email"
-                    value={email}
-                    onChange={e => { setEmail(e.target.value); setError(''); }}
-                    placeholder="admin@linkx8.in"
-                    autoComplete="email"
-                    className="w-full bg-[#F7F7FB] border border-[#E5E7EB] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#1F2937] placeholder-[#9CA3AF] focus:outline-none focus:border-[#8B5CF6] focus:ring-2 focus:ring-[#8B5CF6]/10 transition-all duration-150"
-                  />
-                </div>
+        {activeTab === 0 && (
+          <>
+            {error && (
+              <div style={s.error}>
+                <AlertCircle size={15} style={{ marginTop: 1, flexShrink: 0 }} />
+                <span>{error}</span>
               </div>
-
-              <div>
-                <label htmlFor="login-password" className="text-xs font-bold text-[#1F2937] block mb-1.5">
-                  Password
-                </label>
-                <div className="relative">
-                  <Shield className="w-4 h-4 text-[#6B7280] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    id="login-password"
-                    type="password"
-                    value={password}
-                    onChange={e => { setPassword(e.target.value); setError(''); }}
-                    placeholder="••••••••"
-                    autoComplete="current-password"
-                    className="w-full bg-[#F7F7FB] border border-[#E5E7EB] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#1F2937] placeholder-[#9CA3AF] focus:outline-none focus:border-[#8B5CF6] focus:ring-2 focus:ring-[#8B5CF6]/10 transition-all duration-150"
-                  />
-                </div>
+            )}
+            <form onSubmit={handleSubmit} style={s.form}>
+              <div style={s.fieldGroup}>
+                <label style={s.label}>Username / Official Email<span style={s.required}> *</span></label>
+                <input type="text" value={email} onChange={(e) => setEmail(e.target.value)}
+                  onFocus={() => setFocusEmail(true)} onBlur={() => setFocusEmail(false)}
+                  autoComplete="username"
+                  style={{ ...s.input, borderColor: focusEmail ? '#1a5fa8' : '#aab4c4', boxShadow: focusEmail ? '0 0 0 2px rgba(26,95,168,0.15)' : 'none' }} />
+                <span style={s.hint}>Enter your NER88 | North East Logistics Platform username or official government email.</span>
               </div>
-
-              {/* Error */}
-              {error && (
-                <div className="flex items-center gap-2 text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2.5 text-xs font-medium">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  {error}
-                </div>
-              )}
-
-              {/* Success */}
-              {success && (
-                <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2.5 text-xs font-medium">
-                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-                  Authentication successful. Redirecting…
-                </div>
-              )}
-
-              <button
-                id="login-continue-email"
-                type="submit"
-                disabled={loading || success}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-[#6D28D9] via-[#8B5CF6] to-[#14B8A6] hover:opacity-90 active:scale-[0.98] text-white font-extrabold text-sm shadow-md transition-all duration-150 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Authenticating…</>
-                ) : (
-                  <>Continue <ArrowRight className="w-4 h-4" /></>
-                )}
+              <div style={s.fieldGroup}>
+                <label style={s.label}>Password<span style={s.required}> *</span></label>
+                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+                  onFocus={() => setFocusPass(true)} onBlur={() => setFocusPass(false)}
+                  autoComplete="current-password"
+                  style={{ ...s.input, borderColor: focusPass ? '#1a5fa8' : '#aab4c4', boxShadow: focusPass ? '0 0 0 2px rgba(26,95,168,0.15)' : 'none' }} />
+                <span style={s.hint}>Enter the password that accompanies your username.</span>
+              </div>
+              <div style={{ marginBottom: 20, marginTop: -6 }}>
+                <span onClick={() => setActiveTab(2)} style={{ color: '#1a5fa8', fontSize: 12.5, cursor: 'pointer', textDecoration: 'underline' }}>Forgot / Request new password?</span>
+              </div>
+              <button type="submit" disabled={loading} style={{ ...s.btnBlue, opacity: loading ? 0.7 : 1 }}>
+                {loading && <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />}
+                {loading ? 'Signing In...' : 'LOG IN'}
               </button>
             </form>
+          </>
+        )}
 
-          {/* ── Divider ── */}
-          <div className="flex items-center gap-3 my-6">
-            <div className="flex-1 h-px bg-[#E5E7EB]" />
-            <span className="text-[11px] text-[#6B7280] font-semibold">or continue with</span>
-            <div className="flex-1 h-px bg-[#E5E7EB]" />
-          </div>
-
-          {/* ── Google Button ── */}
-          <button
-            id="login-google"
-            type="button"
-            disabled={loading}
-            onClick={async () => {
-              try {
-                setLoading(true);
-                setError('');
-                await loginWithGoogle();
-              } catch (err) {
-                setError(err.message || 'Google authentication failed.');
-                setLoading(false);
-              }
-            }}
-            className="w-full flex items-center justify-center gap-3 py-2.5 px-4 bg-white border border-[#E5E7EB] rounded-xl text-sm font-semibold text-[#1F2937] hover:bg-[#F7F7FB] hover:border-[#CBD5E1] active:scale-[0.98] transition-all duration-150 shadow-xs disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            {/* Google G icon */}
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="M17.64 9.20455C17.64 8.56637 17.5827 7.95274 17.4764 7.36365H9V10.845H13.8436C13.635 11.97 13.0009 12.9232 12.0477 13.5614V15.8196H14.9564C16.6582 14.2527 17.64 11.9455 17.64 9.20455Z" fill="#4285F4"/>
-              <path d="M9 18C11.43 18 13.4673 17.1941 14.9564 15.8196L12.0477 13.5614C11.2418 14.1014 10.2109 14.4205 9 14.4205C6.65591 14.4205 4.67182 12.8373 3.96409 10.71H0.957275V13.0418C2.43818 15.9832 5.48182 18 9 18Z" fill="#34A853"/>
-              <path d="M3.96409 10.71C3.78409 10.17 3.68182 9.59319 3.68182 9C3.68182 8.40682 3.78409 7.83001 3.96409 7.29001V4.95819H0.957275C0.347727 6.17319 0 7.54774 0 9C0 10.4523 0.347727 11.8268 0.957275 13.0418L3.96409 10.71Z" fill="#FBBC05"/>
-              <path d="M9 3.57955C10.3214 3.57955 11.5077 4.03364 12.4405 4.92545L15.0218 2.34409C13.4632 0.891818 11.4259 0 9 0C5.48182 0 2.43818 2.01682 0.957275 4.95819L3.96409 7.29C4.67182 5.16273 6.65591 3.57955 9 3.57955Z" fill="#EA4335"/>
-            </svg>
-            Continue with Google
-          </button>
-
-          {/* ── Quick Demo Role Selector ── */}
-          <div className="mt-8 pt-6 border-t border-[#E5E7EB]">
-            <p className="text-[10px] font-extrabold text-[#6B7280] uppercase tracking-widest text-center mb-3">
-              Quick Demo Access
+        {activeTab === 1 && (
+          <div style={s.form}>
+            <p style={{ fontSize: 14, color: '#444', marginBottom: 20, lineHeight: 1.65 }}>
+              NER88 accounts are provisioned by system administrators for authorized government personnel. Contact your district logistics officer or MDoNER IT helpdesk to request access.
             </p>
-            <div className="flex justify-center gap-2 flex-wrap">
-              {[
-                { label: 'Admin', email: 'admin@linkx8.in', pw: 'Admin@123' },
-                { label: 'Dispatcher', email: 'dispatcher@linkx8.in', pw: 'Dispatch@123' },
-                { label: 'Field Officer', email: 'field@linkx8.in', pw: 'Field@123' },
-                { label: 'Viewer', email: 'viewer@linkx8.in', pw: 'Viewer@123' },
-              ].map(({ label, email: dEmail, pw }) => (
-                <button
-                  key={label}
-                  id={`demo-${label.toLowerCase().replace(' ', '-')}`}
-                  type="button"
-                  onClick={() => handleDemoLogin(dEmail, pw)}
-                  className="px-3 py-1.5 bg-[#F0EFF8] hover:bg-purple-100 rounded-xl text-[11px] font-extrabold text-[#6D28D9] border border-purple-200/80 transition-all duration-150 active:scale-95"
-                >
-                  {label}
+            <div style={{ background: '#fff8e1', border: '1px solid #f0c040', borderRadius: 3, padding: '12px 16px', fontSize: 13, color: '#7a5800', marginBottom: 20 }}>
+              <strong>Note:</strong> Self-registration is restricted to authorized officials only. All accounts are subject to role verification.
+            </div>
+            <button onClick={() => navigate('/register')} style={s.btnBlue}>REQUEST ACCOUNT ACCESS</button>
+          </div>
+        )}
+
+        {activeTab === 2 && (
+          <div style={s.form}>
+            <p style={{ fontSize: 14, color: '#444', marginBottom: 20, lineHeight: 1.65 }}>
+              Enter your registered official email address. A password reset link will be sent to your inbox.
+            </p>
+            <div style={s.fieldGroup}>
+              <label style={s.label}>Registered Email Address<span style={s.required}> *</span></label>
+              <input type="email" placeholder="e.g. officer@ner88.gov.in" style={s.input} />
+              <span style={s.hint}>Enter the email address associated with your NER88 account.</span>
+            </div>
+            <button onClick={() => navigate('/forgot-password')} style={s.btnBlue}>REQUEST NEW PASSWORD</button>
+          </div>
+        )}
+
+        <div style={{ marginTop: 40 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+            <div style={{ flex: 1, height: 1, background: '#c8d3e0' }} />
+            <span style={{ fontSize: 11.5, color: '#888', fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Quick Access — Official Evaluation</span>
+            <div style={{ flex: 1, height: 1, background: '#c8d3e0' }} />
+          </div>
+          <div style={s.quickPanel}>
+            <div style={s.quickTitle}>Pre-configured Role Accounts</div>
+            <div style={s.quickGrid}>
+              {QUICK_USERS.map((u) => (
+                <button key={u.email} style={s.quickBtn} disabled={loading}
+                  onClick={() => { setActiveTab(0); setEmail(u.email); setPassword(u.pass); doLogin(u.email, u.pass); }}>
+                  {u.label}
+                  <span style={{ display: 'block', fontSize: 11, color: '#1a5fa8', fontWeight: 500, marginTop: 2 }}>● {u.role}</span>
+                  <span style={{ display: 'block', fontSize: 10.5, color: '#888', marginTop: 1, fontFamily: 'monospace' }}>{u.email}</span>
                 </button>
               ))}
             </div>
           </div>
         </div>
       </div>
+
+      <footer style={s.footer}>
+        {['Website Policies', 'Help', 'Contact Us', 'FAQs', 'Terms & Conditions'].map((item, i, arr) => (
+          <React.Fragment key={item}>
+            <span style={s.footerLink}>{item}</span>
+            {i < arr.length - 1 && <span style={s.footerSep}>|</span>}
+          </React.Fragment>
+        ))}
+      </footer>
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } } input:focus { outline: none; }`}</style>
     </div>
   );
 };
+
+export default Login;

@@ -17,7 +17,8 @@ from app.api import (
     device_hardware,  # GAP 16 — Physical GPS/OBD Device Integration
     ml_data,          # GAP 17 — Real Historical Regional Training Data
     operational_alerts, # GAP 18, 19, 20 — Automated Operational Alerts
-    vahan             # MoRTH VAHAN / ULIP v6.0 Vehicle Intelligence
+    vahan,            # MoRTH VAHAN / ULIP v6.0 Vehicle Intelligence
+    assistant         # Assistant 88 — NER88 Operational Intelligence Layer
 )
 
 app = FastAPI(
@@ -92,10 +93,13 @@ app.include_router(ml_data.router, prefix=api_v1)
 # Gaps 18, 19, 20 — Automated Operational Alerts
 app.include_router(operational_alerts.router, prefix=api_v1)
 
+# Assistant 88 — NER88 Operational Intelligence Layer
+app.include_router(assistant.router, prefix=api_v1)
+
 @app.get("/")
 def root():
     return {
-        "project": "LINK X8",
+        "project": "NER88",
         "tagline": "Predict. Reroute. Deliver.",
         "sih_problem_id": "SIH26002",
         "organization": "Ministry of Development of North Eastern Region (MDoNER)",
@@ -107,7 +111,7 @@ def root():
 def root_health_check():
     return {
         "status": "HEALTHY",
-        "system": "LINK X8 Core Engine",
+        "system": "NER88 Core Engine",
         "environment": "PRODUCTION" if getattr(settings, "ENVIRONMENT", "development") == "production" else "DEVELOPMENT",
         "api_v1_health": f"{settings.API_V1_STR}/health",
         "weather_health": f"{settings.API_V1_STR}/health/weather"

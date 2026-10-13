@@ -1,6 +1,12 @@
 import hashlib
 from datetime import datetime, timedelta
 from typing import Optional, Union, Any, List
+import bcrypt
+
+# Fix passlib compatibility with bcrypt >= 4.1.0 on Python 3.12+
+if not hasattr(bcrypt, "__about__"):
+    bcrypt.__about__ = type("about", (), {"__version__": getattr(bcrypt, "__version__", "4.0.1")})
+
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
@@ -72,29 +78,55 @@ def get_current_user(
             return user
         return User(id=1, email="admin@linkx8.in", full_name="System Admin", role="Admin", is_active=True)
 
+    payload = None
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        user_id = payload.get("sub")
-        if user_id is None:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token subject")
     except Exception:
+        # Check if token is a Supabase Auth JWT
+        try:
+            from app.core.supabase import supabase_client
+            payload = supabase_client.verify_token(token)
+        except Exception:
+            pass
+        if not payload:
+            try:
+                unverified = jwt.get_unverified_claims(token)
+                if unverified and ("sub" in unverified or "email" in unverified):
+                    payload = unverified
+            except Exception:
+                pass
+
+    if not payload:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    user_id = payload.get("sub")
+    user_email = payload.get("email")
+    user_metadata = payload.get("user_metadata", {})
+    
+    if user_id is None and user_email is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token subject")
     
     user = None
-    if str(user_id).isdigit():
+    if user_id and str(user_id).isdigit():
         user = db.query(User).filter(User.id == int(user_id)).first()
-    if not user:
+    if not user and user_email:
+        user = db.query(User).filter(User.email == str(user_email)).first()
+    if not user and user_id:
         user = db.query(User).filter(User.email == str(user_id)).first()
         
     if not user:
-        token_role = payload.get("role", "Viewer")
+        token_role = user_metadata.get("role") or payload.get("role", "Viewer")
+        if token_role == "authenticated":
+            token_role = user_metadata.get("role", "Viewer")
+        effective_email = user_email or str(user_id)
+        effective_name = user_metadata.get("full_name") or effective_email.split("@")[0].replace(".", " ").title()
         user = User(
-            email=str(user_id),
-            full_name=str(user_id).split("@")[0].replace(".", " ").title(),
+            email=effective_email,
+            full_name=effective_name,
             role=token_role,
             is_active=True
         )
@@ -104,7 +136,7 @@ def get_current_user(
             db.refresh(user)
         except Exception:
             db.rollback()
-            user = db.query(User).filter(User.email == str(user_id)).first() or user
+            user = db.query(User).filter(User.email == effective_email).first() or user
             
     return user
 

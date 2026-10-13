@@ -2,7 +2,8 @@ import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 from app.core.security import create_access_token, get_current_user, get_current_active_user
-from app.models.models import User
+from app.models.models import User, Incident
+from app.database.database import SessionLocal
 
 client = TestClient(app)
 
@@ -48,6 +49,7 @@ def test_invalid_token_rejected():
 def test_valid_token_accepted():
     saved_overrides = dict(app.dependency_overrides)
     app.dependency_overrides.clear()
+    db = SessionLocal()
     try:
         token = create_access_token(subject="admin@linkx8.in", role="Admin")
         res = client.post(
@@ -66,6 +68,9 @@ def test_valid_token_accepted():
         assert res.status_code in [200, 201]
     finally:
         app.dependency_overrides.update(saved_overrides)
+        db.query(Incident).filter(Incident.description == "Valid token incident report").delete()
+        db.commit()
+        db.close()
 
 def test_role_forbidden_for_non_admin():
     saved_overrides = dict(app.dependency_overrides)

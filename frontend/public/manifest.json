@@ -1,7 +1,7 @@
 {
-  "short_name": "LINK X8",
-  "name": "LINK X8 — Smart Logistics & Accessibility Intelligence Platform",
-  "description": "AI-Based Smart Logistics and Accessibility Intelligence Platform for North Eastern Region of India (LINK X8 / SIH26002)",
+  "short_name": "NER88",
+  "name": "NER88 — Regional Logistics Intelligence & Decision Platform",
+  "description": "Regional Logistics Intelligence & Decision Platform for North Eastern Region of India (MDoNER / SIH26002). Predict. Reroute. Deliver.",
   "icons": [
     {
       "src": "/favicon.svg",
@@ -10,10 +10,10 @@
       "purpose": "any maskable"
     }
   ],
-  "start_url": "/dashboard",
+  "start_url": "/command-center",
   "display": "standalone",
-  "theme_color": "#7C3AED",
-  "background_color": "#F7F7FB",
+  "theme_color": "#0F284E",
+  "background_color": "#F8FAFC",
   "orientation": "portrait-primary",
-  "categories": ["logistics", "government", "productivity", "utilities"]
+  "categories": ["logistics", "government", "gis", "utilities"]
 }

@@ -144,14 +144,17 @@ class Corridor(Base):
     destination = Column(String, nullable=False)
     states_covered = Column(String, nullable=False) # e.g. Assam, Nagaland, Manipur
     status = Column(String, default="OPEN") # OPEN, PASSABLE, PARTIAL, RESTRICTED, BLOCKED, CLOSED
+    accessibility_status = Column(String, default="OPEN") # OPEN, RESTRICTED, BLOCKED
     accessibility_score = Column(Float, default=90.0) # 0 to 100
     risk_level = Column(String, default="LOW") # LOW, MEDIUM, HIGH, CRITICAL
     current_condition = Column(String, default="Normal traffic flow")
     weather_condition = Column(String, default="Clear")
     reason = Column(Text, default="Normal road and bridge passage")
+    factor_summary = Column(String, default="Normal road and bridge passage")
     estimated_delay_mins = Column(Integer, default=0)
     incident_count = Column(Integer, default=0)
     data_source = Column(String, default="INTEGRATED_ACCESSIBILITY_ENGINE")
+    data_sources = Column(Text, default='["Open-Meteo Live API", "Field Officer Inspection Incident Feed", "BRO Bridge Clearance Registry"]')
     data_confidence = Column(String, default="HIGH") # HIGH, MEDIUM, LOW, ESTIMATED
     polyline_coords = Column(Text, nullable=True) # JSON array of coordinates
     last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -268,4 +271,41 @@ class SystemSettings(Base):
     setting_value = Column(String, nullable=False)
     description = Column(String, nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class RouteDecision(Base):
+    __tablename__ = "route_decisions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    decision_code = Column(String, unique=True, index=True, nullable=False) # e.g. RDEC-2026-001
+    delivery_id = Column(Integer, ForeignKey("deliveries.id"), nullable=False, index=True)
+    delivery_code = Column(String, nullable=False, index=True)
+    vehicle_id = Column(Integer, ForeignKey("vehicles.id"), nullable=True, index=True)
+    vehicle_code = Column(String, nullable=True, index=True)
+    corridor_code = Column(String, nullable=False, index=True)
+    incident_id = Column(Integer, ForeignKey("incidents.id"), nullable=True, index=True)
+    trigger_event = Column(String, default="CORRIDOR_BLOCKED") # CORRIDOR_BLOCKED, CORRIDOR_RESTRICTED, INCIDENT_REPORTED
+    original_route_id = Column(String, default="ROUTE_A")
+    original_route_name = Column(String, default="Route A (Primary Corridor)")
+    original_distance_km = Column(Float, default=480.0)
+    original_travel_time_hours = Column(Float, default=11.0)
+    original_eta = Column(DateTime, nullable=False)
+    alternative_route_id = Column(String, default="ROUTE_B")
+    alternative_route_name = Column(String, default="Route B (Western Bypass via Silchar / Jiribam)")
+    alternative_distance_km = Column(Float, default=535.0)
+    alternative_travel_time_hours = Column(Float, default=13.5)
+    new_eta = Column(DateTime, nullable=False)
+    additional_distance_km = Column(Float, default=55.0)
+    additional_time_minutes = Column(Integer, default=150)
+    risk_score_before = Column(Float, default=82.0)
+    risk_score_after = Column(Float, default=38.0)
+    status = Column(String, default="PROPOSED") # PROPOSED, APPROVED, EXECUTED, REJECTED
+    rationale = Column(Text, nullable=True)
+    waypoints_json = Column(Text, nullable=True) # Alternate waypoints
+    original_waypoints_json = Column(Text, nullable=True) # Original waypoints
+    decision_metadata = Column(Text, nullable=True) # Extensible JSON
+    approved_by = Column(String, nullable=True)
+    approved_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="100%" height="100%" fill="none">
+  <!-- Government Shield Badge with Saffron-White-Green Accent Notch -->
+  <rect x="4" y="6" width="48" height="48" rx="8" fill="#123B66"/>
+  <rect x="50" y="10" width="3" height="12" rx="1" fill="#F28C28"/>
+  <rect x="50" y="24" width="3" height="12" rx="1" fill="#FFFFFF"/>
+  <rect x="50" y="38" width="3" height="12" rx="1" fill="#16834B"/>
+
+  <!-- Compass / GIS Network Crosshair in Shield -->
+  <circle cx="28" cy="30" r="16" stroke="#FFFFFF" stroke-width="1.5" stroke-dasharray="2 2" opacity="0.4"/>
+  <path d="M28 16 L28 44 M14 30 L42 30" stroke="#185A8D" stroke-width="1.5" opacity="0.6"/>
+  
+  <!-- 8 States Geometric Hub Icon (Northeast 8) -->
+  <polygon points="28,20 37,25 37,35 28,40 19,35 19,25" fill="#185A8D" stroke="#FFFFFF" stroke-width="1.5"/>
+  <circle cx="28" cy="30" r="3.5" fill="#F28C28"/>
+
+  <!-- NER88 Wordmark -->
+  <text x="64" y="34" font-family="'Inter', sans-serif" font-weight="800" font-size="24" fill="#123B66" letter-spacing="-0.5">NER</text>
+  <text x="122" y="34" font-family="'Inter', sans-serif" font-weight="800" font-size="24" fill="#185A8D" letter-spacing="-0.5">88</text>
+  
+  <!-- Tagline / Descriptor -->
+  <text x="65" y="46" font-family="'Inter', sans-serif" font-weight="600" font-size="7.5" fill="#5B6570" letter-spacing="1.2">REGIONAL LOGISTICS</text>
+</svg>

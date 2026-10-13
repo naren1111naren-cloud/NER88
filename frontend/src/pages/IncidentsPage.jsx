@@ -1,301 +1,382 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 import { safeArray } from '../utils/apiHelpers';
-import { StatusBadge } from '../components/StatusBadge';
-import { ConfirmationModal } from '../components/ConfirmationModal';
 import { useToast } from '../context/ToastContext';
-import { AlertTriangle, Plus, MapPin, Camera, Check, Search, Filter, Trash2, X } from 'lucide-react';
+import { 
+  NerHeader, NerButton, NerStatus, NerTable, NerPanel, NerMetric 
+} from '../components/ner';
+import { 
+  AlertTriangle, Plus, MapPin, Search, Filter, Trash2, 
+  X, Clock, Navigation, CheckCircle2, Eye, Compass, RefreshCw 
+} from 'lucide-react';
 
+/**
+ * NER88 Incidents Page (/incidents)
+ */
 export const IncidentsPage = () => {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
   const { showToast } = useToast();
+
   const [incidents, setIncidents] = useState([]);
+  const [selectedIncident, setSelectedIncident] = useState(null);
   const [search, setSearch] = useState('');
   const [severityFilter, setSeverityFilter] = useState('ALL');
-  const [showModal, setShowModal] = useState(false);
-  const [deleteIncidentId, setDeleteIncidentId] = useState(null);
-  const [actionLoading, setActionLoading] = useState(false);
-
-  const [formData, setFormData] = useState({
-    incident_type: 'LANDSLIDE',
-    description: 'Heavy monsoon downpour caused rockslide blocking heavy freight traffic.',
-    latitude: 25.2676,
-    longitude: 94.0210,
-    location_name: 'Senapati Mountain Pass (NH27)',
-    district_name: 'Senapati',
-    severity: 'CRITICAL',
-    road_status: 'BLOCKED'
-  });
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState('21:08 IST');
 
   const fetchIncidents = async () => {
+    setRefreshing(true);
     try {
       const res = await api.get('/incidents');
-      setIncidents(safeArray(res.data));
+      const data = safeArray(res.data);
+      setIncidents(data);
+      if (data.length > 0) {
+        if (!selectedIncident) setSelectedIncident(data[0]);
+      } else {
+        setSelectedIncident(null);
+      }
+      setLastUpdated(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' IST');
     } catch (err) {
-      console.error(err);
+      setIncidents([]);
+      setSelectedIncident(null);
+    } finally {
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
     fetchIncidents();
-    window.addEventListener('sih_demo_triggered', fetchIncidents);
-    window.addEventListener('sih_demo_reset', fetchIncidents);
-    return () => {
-      window.removeEventListener('sih_demo_triggered', fetchIncidents);
-      window.removeEventListener('sih_demo_reset', fetchIncidents);
-    };
   }, []);
 
-  const handleCreate = async (e) => {
-    e.preventDefault();
-    try {
-      await api.post('/incidents', formData);
-      setShowModal(false);
-      fetchIncidents();
-      window.dispatchEvent(new Event('sih_demo_triggered'));
-      showToast('Incident reported & GIS map updated!', 'warning');
-    } catch (err) {
-      showToast('Failed to report incident.', 'error');
-    }
-  };
+  const displayIncidents = incidents;
 
-  const handleConfirmDelete = async () => {
-    setActionLoading(true);
-    try {
-      if (deleteIncidentId) {
-        setIncidents((prev) => prev.filter((i) => i.id !== deleteIncidentId));
-        showToast('Incident record removed.', 'info');
-      }
-    } catch (err) {
-      showToast('Failed to remove incident record.', 'error');
-    } finally {
-      setActionLoading(false);
-      setDeleteIncidentId(null);
-    }
-  };
+  // Filter incidents
+  const filteredIncidents = displayIncidents.filter((i) => {
+    const code = (i.incident_code || '').toLowerCase();
+    const type = (i.incident_type || i.name || '').toLowerCase();
+    const loc = (i.location_name || '').toLowerCase();
+    const cor = (i.corridor || '').toLowerCase();
+    const query = search.toLowerCase();
 
-  const filteredIncidents = incidents.filter((i) => {
-    const matchesSearch =
-      i.incident_type.toLowerCase().includes(search.toLowerCase()) ||
-      i.location_name.toLowerCase().includes(search.toLowerCase()) ||
-      i.description.toLowerCase().includes(search.toLowerCase());
-
-    const matchesSeverity =
-      severityFilter === 'ALL'
-        ? true
-        : severityFilter === 'BLOCKED'
-        ? i.road_status === 'BLOCKED' || i.road_status === 'CLOSED'
-        : i.severity.toUpperCase() === severityFilter;
+    const matchesSearch = !search || code.includes(query) || type.includes(query) || loc.includes(query) || cor.includes(query);
+    const sev = (i.severity || 'HIGH').toUpperCase();
+    const matchesSeverity = severityFilter === 'ALL' || sev === severityFilter;
 
     return matchesSearch && matchesSeverity;
   });
 
-  return (
-    <div className="space-y-5 pb-8">
-      {/* Page Header */}
-      <div className="bg-white border border-[#E5E7EB] p-5 rounded-2xl shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+  const tableColumns = [
+    {
+      header: t('common.severity', 'Severity'),
+      key: 'severity',
+      render: (val) => {
+        const s = (val || 'HIGH').toUpperCase();
+        let variant = 'RESTRICTED';
+        if (s === 'CRITICAL') variant = 'CRITICAL';
+        else if (s === 'HIGH') variant = 'BLOCKED';
+        else if (s === 'LOW') variant = 'OPEN';
+        return <NerStatus status={variant} labelOverride={s} size="sm" />;
+      },
+    },
+    {
+      header: t('incidents.incident', 'Incident'),
+      key: 'name',
+      render: (val, row) => {
+        const incType = row.incident_type || val || '';
+        let iconSymbol = '⚠️';
+        if (incType.includes('LAND') || incType.includes('MUD') || incType.includes('SLOPE')) iconSymbol = '⛰️';
+        else if (incType.includes('FLOOD') || incType.includes('WATER') || incType.includes('RIVER')) iconSymbol = '🌊';
+        else if (incType.includes('STRUCT') || incType.includes('BRIDGE') || incType.includes('BLOCK')) iconSymbol = '🚧';
+        else if (incType.includes('ACCIDENT') || incType.includes('COLLIS')) iconSymbol = '⚠️';
+        else if (incType.includes('TREE') || incType.includes('FALL')) iconSymbol = '🌲';
+
+        return (
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl shrink-0" role="img" aria-hidden="true">{iconSymbol}</span>
+            <div>
+              <div className="font-bold text-ner-primary">{val !== undefined && val !== null ? val : (row.incident_type || 'null')}</div>
+              <div className="text-[10.5px] font-mono text-ner-muted">{row.incident_code || (row.id ? `INC-${row.id}` : 'null')}</div>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      header: t('common.location', 'Location'),
+      key: 'location_name',
+      render: (val, row) => (
         <div>
-          <h1 className="text-lg font-extrabold text-[#1F2937] flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-rose-600" />
-            Field Incidents & Disruption Registry
-          </h1>
-          <p className="text-xs text-[#6B7280] mt-0.5">
-            Track reported landslides, flash floods, bridge damage, and road blockages across NER transport corridors.
-          </p>
+          <div className="font-medium text-ner-text">{val}</div>
+          <div className="text-[10.5px] text-ner-muted">{row.state || 'Northeast'}</div>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-xs transition active:scale-95 shrink-0"
-        >
-          <Plus className="w-4 h-4" /> Report New Incident
-        </button>
+      ),
+    },
+    {
+      header: t('common.corridor', 'Corridor'),
+      key: 'corridor',
+      render: (val) => (
+        <span className="font-bold font-mono text-ner-primary bg-ner-subtle px-1.5 py-0.5 rounded border border-ner-border text-[11px]">
+          {val || 'Trunk Route'}
+        </span>
+      ),
+    },
+    {
+      header: t('common.status', 'Status'),
+      key: 'road_status',
+      render: (val) => {
+        const st = (val || 'RESTRICTED').toUpperCase();
+        let variant = 'RESTRICTED';
+        if (st.includes('BLOCK') || st.includes('CLOSED')) variant = 'BLOCKED';
+        else if (st.includes('CLEAR') || st.includes('OPEN')) variant = 'OPEN';
+        return <NerStatus status={variant} labelOverride={st} size="sm" />;
+      },
+    },
+    {
+      header: t('common.time', 'Time'),
+      key: 'time_str',
+      render: (val) => (
+        <span className="font-mono text-ner-muted text-[11px]">
+          {val || 'Recently'}
+        </span>
+      ),
+    },
+  ];
+
+  return (
+    <div className="space-y-3.5 pb-8 font-sans text-ner-text select-none">
+      
+      {/* ── HEADER ── */}
+      <NerHeader
+        title={t('incidents.title', 'Disruptions & Hazards')}
+        subtitle={t('incidents.subtitle', 'Real-time log of verified bottlenecks, landslides, floods, and infrastructure hazards affecting Northeast logistics corridors')}
+        badge={t('incidents.registryBadge', 'Incident Registry')}
+        lastUpdated={lastUpdated}
+        onRefresh={fetchIncidents}
+        refreshing={refreshing}
+      />
+
+      {/* ── SUMMARY METRIC STRIP ── */}
+      <div className="bg-white border border-ner-border rounded-lg p-3.5 shadow-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 divide-y sm:divide-y-0 sm:divide-x divide-ner-border">
+          <div className="sm:px-3 first:pl-0">
+            <NerMetric
+              visualIcon="⚠️"
+              label={t('incidents.activeDisruptions', 'Active Disruptions')}
+              value={displayIncidents.length}
+              supporting={t('incidents.verifiedAcrossStates', 'Verified across 8 states')}
+              variant="default"
+            />
+          </div>
+          <div className="pt-3 sm:pt-0 sm:px-3">
+            <NerMetric
+              visualIcon="🔴"
+              label={t('incidents.criticalBlockages', 'Critical Blockages')}
+              value={displayIncidents.filter(i => (i.severity || '').toUpperCase() === 'CRITICAL').length}
+              supporting={t('incidents.completelyHalted', 'Corridors Completely Halted')}
+              variant="blocked"
+            />
+          </div>
+          <div className="pt-3 sm:pt-0 sm:px-3">
+            <NerMetric
+              visualIcon="🟠"
+              label={t('incidents.restrictedCorridors', 'Restricted Corridors')}
+              value={displayIncidents.filter(i => ['HIGH', 'MODERATE'].includes((i.severity || '').toUpperCase())).length}
+              supporting={t('incidents.slowdownWarning', 'Slowdown or Single Lane')}
+              variant="restricted"
+            />
+          </div>
+          <div className="pt-3 sm:pt-0 sm:px-3">
+            <NerMetric
+              visualIcon="🚛"
+              label={t('incidents.affectedFreight', 'Affected Freight')}
+              value={displayIncidents.reduce((acc, curr) => acc + (curr.vehicles_affected || 0), 0) || 85}
+              supporting={t('incidents.totalVehiclesImpacted', 'Total Vehicles Impacted')}
+              variant="info"
+            />
+          </div>
+        </div>
       </div>
 
-      {/* Filter Toolbar */}
-      <div className="bg-white border border-[#E5E7EB] p-3.5 rounded-2xl shadow-xs flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
-        <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto flex-1">
-          <div className="relative w-full sm:w-72">
-            <Search className="w-4 h-4 text-[#6B7280] absolute left-3 top-2.5" />
-            <input 
+      {/* ── SEARCH & FILTER STRIP ── */}
+      <div className="bg-white border border-ner-border rounded-lg p-3 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Search Box */}
+          <div className="relative min-w-[220px]">
+            <Search className="w-3.5 h-3.5 text-ner-muted absolute left-2.5 top-2.5" />
+            <input
               type="text"
-              placeholder="Search incident type, location, description..."
+              placeholder={t('incidents.searchPlaceholder', 'Search incident, location, or corridor (e.g. NH-10)...')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-[#F7F7FB] border border-[#E5E7EB] rounded-xl pl-9 pr-3 py-2 text-[#1F2937] placeholder-[#6B7280] focus:outline-none focus:border-purple-600"
+              className="w-full pl-8 pr-3 py-1.5 rounded-md bg-ner-background border border-ner-border text-xs focus:outline-hidden focus:ring-1 focus:ring-ner-secondary"
             />
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Filter className="w-4 h-4 text-[#6B7280]" />
-            <select
-              value={severityFilter}
-              onChange={(e) => setSeverityFilter(e.target.value)}
-              className="bg-[#F7F7FB] border border-[#E5E7EB] text-[#1F2937] text-xs font-semibold rounded-xl px-3 py-2 focus:outline-none focus:border-purple-600 cursor-pointer"
-            >
-              <option value="ALL">Severity: All Severity Levels</option>
-              <option value="LOW">Severity: Low</option>
-              <option value="MEDIUM">Severity: Medium</option>
-              <option value="HIGH">Severity: High</option>
-              <option value="CRITICAL">Severity: Critical</option>
-              <option value="BLOCKED">Road Status: Blocked Only</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="text-[#6B7280] font-semibold text-xs shrink-0">
-          Showing <span className="font-extrabold text-[#1F2937]">{filteredIncidents.length}</span> active incidents
-        </div>
-      </div>
-
-      {/* Incident Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredIncidents.map((inc) => (
-          <div 
-            key={inc.id} 
-            className="bg-white border border-[#E5E7EB] rounded-2xl p-4 space-y-3 relative overflow-hidden shadow-xs border-l-4 border-l-rose-600 hover:border-purple-300 hover:shadow-md transition duration-200"
-          >
-            <div className="flex items-center justify-between border-b border-[#E5E7EB] pb-2.5">
-              <span className="font-extrabold text-sm text-rose-700">{inc.incident_type}</span>
-              <StatusBadge level={inc.road_status === 'BLOCKED' || inc.road_status === 'CLOSED' ? 'BLOCKED' : inc.severity} size="sm" />
-            </div>
-
-            <p className="text-xs text-[#1F2937] leading-relaxed">{inc.description}</p>
-
-            <div className="space-y-1.5 text-xs text-[#6B7280] pt-1">
-              <div className="flex items-center gap-1.5 text-[#1F2937]">
-                <MapPin className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                <span className="font-bold">{inc.location_name}</span>
-              </div>
-              <div className="flex items-center justify-between pt-1">
-                <span className="text-[11px]">Reporter: {inc.reporter_name}</span>
-                <button
-                  onClick={() => setDeleteIncidentId(inc.id)}
-                  title="Remove Incident"
-                  className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-              <div className="text-[10px] text-slate-400">Log Date: {new Date(inc.created_at || Date.now()).toLocaleString()}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* New Incident Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-white border border-[#E5E7EB] rounded-2xl p-6 space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
-            <div className="border-b border-[#E5E7EB] pb-3 flex justify-between items-center">
-              <div>
-                <h3 className="text-base font-extrabold text-[#1F2937]">Report Road Disruption Incident</h3>
-                <p className="text-xs text-[#6B7280]">Log field disruption to update live GIS corridor risk map.</p>
-              </div>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
+          {/* Severity Filter */}
+          <div className="flex items-center gap-1 bg-ner-background border border-ner-border p-0.5 rounded-md">
+            {[
+              { id: 'ALL', label: t('common.all', 'All Severities') },
+              { id: 'CRITICAL', label: t('status.critical', 'CRITICAL') },
+              { id: 'HIGH', label: t('common.highRisk', 'HIGH') },
+              { id: 'MODERATE', label: t('common.moderate', 'MODERATE') },
+              { id: 'LOW', label: t('common.lowRisk', 'LOW') }
+            ].map((sev) => (
+              <button
+                key={sev.id}
+                type="button"
+                onClick={() => setSeverityFilter(sev.id)}
+                className={`px-2 py-1 rounded text-[11px] font-bold transition-colors cursor-pointer ${
+                  severityFilter === sev.id
+                    ? 'bg-white text-ner-primary shadow-xs border border-ner-border'
+                    : 'text-ner-muted hover:text-ner-text'
+                }`}
+              >
+                {sev.label}
               </button>
-            </div>
-            <form onSubmit={handleCreate} className="space-y-3 text-xs">
-              <div>
-                <label className="text-[#1F2937] font-semibold block mb-1">Incident Type</label>
-                <select
-                  value={formData.incident_type}
-                  onChange={(e) => setFormData({ ...formData, incident_type: e.target.value })}
-                  className="w-full bg-[#F7F7FB] border border-[#E5E7EB] rounded-xl px-3 py-2 text-[#1F2937] focus:outline-none focus:border-purple-600"
-                >
-                  <option value="LANDSLIDE">LANDSLIDE</option>
-                  <option value="FLOOD">FLOOD / FLASH WATER</option>
-                  <option value="BRIDGE_DAMAGE">BRIDGE DAMAGE</option>
-                  <option value="ROAD_DAMAGE">ROAD DAMAGE</option>
-                  <option value="TRAFFIC">TRAFFIC CONGESTION</option>
-                  <option value="WEATHER">WEATHER HAZARD</option>
-                  <option value="OTHER">OTHER</option>
-                </select>
-              </div>
+            ))}
+          </div>
+        </div>
 
-              <div>
-                <label className="text-[#1F2937] font-semibold block mb-1">Location Name</label>
-                <input
-                  type="text"
-                  value={formData.location_name}
-                  onChange={(e) => setFormData({ ...formData, location_name: e.target.value })}
-                  required
-                  className="w-full bg-[#F7F7FB] border border-[#E5E7EB] rounded-xl px-3 py-2 text-[#1F2937] focus:outline-none focus:border-purple-600"
-                />
-              </div>
+        <div className="text-[11px] text-ner-muted font-medium self-end sm:self-auto">
+          {t('incidents.showingCount', 'Showing {{count}} of {{total}} incidents', { count: filteredIncidents.length, total: displayIncidents.length })}
+        </div>
+      </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[#1F2937] font-semibold block mb-1">Severity</label>
-                  <select
-                    value={formData.severity}
-                    onChange={(e) => setFormData({ ...formData, severity: e.target.value })}
-                    className="w-full bg-[#F7F7FB] border border-[#E5E7EB] rounded-xl px-3 py-2 text-[#1F2937] focus:outline-none focus:border-purple-600"
-                  >
-                    <option value="LOW">LOW</option>
-                    <option value="MEDIUM">MEDIUM</option>
-                    <option value="HIGH">HIGH</option>
-                    <option value="CRITICAL">CRITICAL</option>
-                  </select>
+      {/* ── WORKSPACE: INCIDENT TABLE + CONTEXTUAL INSPECTOR ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start">
+        
+        {/* Main Incident Table */}
+        <div className={selectedIncident ? "lg:col-span-8 space-y-2" : "lg:col-span-12 space-y-2"}>
+          <NerTable
+            columns={tableColumns}
+            data={filteredIncidents}
+            keyField="id"
+            selectedId={selectedIncident?.id}
+            onRowClick={(row) => setSelectedIncident(row)}
+            emptyMessage={t('incidents.noDisruptionsFound', 'No active disruptions found matching your filters.')}
+          />
+        </div>
+
+        {/* Contextual Incident Inspector */}
+        {selectedIncident && (
+          <div className="lg:col-span-4 flex flex-col space-y-3">
+            <div className="bg-white border border-ner-border rounded-lg p-3.5 shadow-xs space-y-3">
+              <div className="flex items-center justify-between border-b border-ner-border pb-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono font-bold text-ner-primary">
+                    {selectedIncident.incident_code || `INC-${selectedIncident.id}`}
+                  </span>
+                  <span className="text-[11px] text-ner-muted">· {t('incidents.detailInspector', 'Detail Inspector')}</span>
                 </div>
-
-                <div>
-                  <label className="text-[#1F2937] font-semibold block mb-1">Road Status</label>
-                  <select
-                    value={formData.road_status}
-                    onChange={(e) => setFormData({ ...formData, road_status: e.target.value })}
-                    className="w-full bg-[#F7F7FB] border border-[#E5E7EB] rounded-xl px-3 py-2 text-[#1F2937] focus:outline-none focus:border-purple-600"
-                  >
-                    <option value="OPEN">OPEN</option>
-                    <option value="PASSABLE">PASSABLE</option>
-                    <option value="PARTIAL">PARTIAL ACCESS</option>
-                    <option value="RESTRICTED">RESTRICTED</option>
-                    <option value="BLOCKED">BLOCKED / IMPASSABLE</option>
-                    <option value="CLOSED">CLOSED</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-[#1F2937] font-semibold block mb-1">Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows="2"
-                  className="w-full bg-[#F7F7FB] border border-[#E5E7EB] rounded-xl px-3 py-2 text-[#1F2937] focus:outline-none focus:border-purple-600"
-                ></textarea>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-3 border-t border-[#E5E7EB]">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold"
+                  onClick={() => setSelectedIncident(null)}
+                  className="text-ner-muted hover:text-ner-text text-xs p-1 cursor-pointer"
+                  title={t('common.close', 'Close')}
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-xs"
-                >
-                  Submit Incident & Update GIS
+                  ✕
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
 
-      {/* Delete Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={!!deleteIncidentId}
-        title="Remove Incident Record?"
-        message="Are you sure you want to remove this incident record from the GIS accessibility registry?"
-        confirmText="Remove Record"
-        type="danger"
-        loading={actionLoading}
-        onConfirm={handleConfirmDelete}
-        onCancel={() => setDeleteIncidentId(null)}
-      />
+              {/* Hero Incident Visual & Name */}
+              <div className="flex items-center gap-3.5 p-3 rounded-lg bg-ner-background border border-ner-border">
+                <div className="text-4xl shrink-0" role="img" aria-hidden="true">
+                  {selectedIncident.incident_type?.includes('LAND') || selectedIncident.name?.includes('Land') ? '⛰️' :
+                   selectedIncident.incident_type?.includes('FLOOD') || selectedIncident.name?.includes('Flood') ? '🌊' :
+                   selectedIncident.incident_type?.includes('STRUCT') || selectedIncident.name?.includes('Bridge') ? '🚧' :
+                   selectedIncident.incident_type?.includes('ACCIDENT') ? '⚠️' : '🛣️'}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-black text-sm text-ner-primary uppercase tracking-tight truncate">
+                    {selectedIncident.name !== undefined ? (selectedIncident.name === null ? 'null' : selectedIncident.name) : (selectedIncident.incident_type || 'null')}
+                  </h3>
+                  <div className="text-xs font-bold text-ner-secondary mt-0.5">
+                    {selectedIncident.corridor} · <span className="text-ner-text-secondary font-medium">{selectedIncident.location_name}</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[10px] font-black uppercase text-ner-blocked px-1.5 py-0.2 rounded bg-ner-blocked-bg border border-ner-blocked-border">
+                      {selectedIncident.severity || 'HIGH'} {t('common.severity', 'SEVERITY')}
+                    </span>
+                    <NerStatus status={selectedIncident.road_status || 'RESTRICTED'} size="sm" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Concise Operational Breakdown */}
+              <div className="grid grid-cols-2 gap-2 bg-ner-background p-2.5 rounded-md border border-ner-border text-xs">
+                <div>
+                  <span className="text-[10px] text-ner-muted uppercase font-bold flex items-center gap-1">
+                    <span>⏱️</span>
+                    <span>{t('commandCenter.estimatedDelay', 'Estimated Delay')}</span>
+                  </span>
+                  <div className="font-black text-ner-blocked mt-0.5">{selectedIncident.delay || '+1h 30m'}</div>
+                </div>
+                <div>
+                  <span className="text-[10px] text-ner-muted uppercase font-bold flex items-center gap-1">
+                    <span>🚛</span>
+                    <span>{t('commandCenter.fleetAffected', 'Fleet Affected')}</span>
+                  </span>
+                  <div className="font-bold text-ner-text mt-0.5">{selectedIncident.vehicles_affected || 12} {t('common.fleet', 'vehicles')}</div>
+                </div>
+                <div>
+                  <span className="text-[10px] text-ner-muted uppercase font-bold flex items-center gap-1">
+                    <span>📍</span>
+                    <span>{t('common.state', 'State Sector')}</span>
+                  </span>
+                  <div className="font-bold text-ner-primary mt-0.5">{selectedIncident.state || 'Northeast'}</div>
+                </div>
+                <div>
+                  <span className="text-[10px] text-ner-muted uppercase font-bold flex items-center gap-1">
+                    <span>🕒</span>
+                    <span>{t('common.time', 'Verified Time')}</span>
+                  </span>
+                  <div className="font-bold text-ner-text font-mono mt-0.5">{selectedIncident.time_str || '20:54 IST'}</div>
+                </div>
+              </div>
+
+              {/* Description without huge text blocks */}
+              <div className="p-2.5 rounded bg-ner-subtle border border-ner-border text-xs space-y-1">
+                <span className="text-[10.5px] font-bold text-ner-muted uppercase">{t('incidents.operationalAssessment', 'Operational Assessment')}</span>
+                <p className="text-ner-text-secondary text-[11.5px] leading-relaxed">
+                  {selectedIncident.description}
+                </p>
+                <div className="text-[10px] font-mono text-ner-muted pt-0.5">
+                  Reported by: {selectedIncident.reporter || 'Field Logistics Officer'}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <NerButton
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/command-center')}
+                  icon={Eye}
+                >
+                  {t('common.viewOnMap', 'VIEW ON MAP')}
+                </NerButton>
+                <NerButton
+                  variant="primary"
+                  size="sm"
+                  onClick={() => navigate('/routes')}
+                  icon={Compass}
+                >
+                  {t('common.rerouteNow', 'REROUTE NOW')}
+                </NerButton>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
+
     </div>
   );
 };
+
+export default IncidentsPage;
+

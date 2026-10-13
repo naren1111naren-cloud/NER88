@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 220" width="100%" height="100%" fill="none">
+  <!-- State Emblem of India (Ashoka Lion Capital) Outline Vector in Institutional Navy / Gold -->
+  <g fill="#123B66">
+    <!-- Center Lion -->
+    <path d="M80 18 C74 18 70 23 70 30 C70 34 72 38 75 41 C73 45 72 50 72 56 C68 54 63 56 61 60 C59 64 60 70 64 73 C62 77 62 82 65 86 C67 89 71 91 75 91 L75 106 C72 107 70 110 70 114 L70 128 L90 128 L90 114 C90 110 88 107 85 106 L85 91 C89 91 93 89 95 86 C98 82 98 77 96 73 C100 70 101 64 99 60 C97 56 92 54 88 56 C88 50 87 45 85 41 C88 38 90 34 90 30 C90 23 86 18 80 18 Z"/>
+    <!-- Left Lion (Profile) -->
+    <path d="M54 36 C50 36 46 39 46 44 C46 48 48 51 51 53 C49 57 48 61 49 66 C46 65 42 66 40 70 C38 74 40 78 43 81 C42 85 43 89 46 92 C49 95 53 96 57 95 L62 108 L69 106 L65 91 C61 90 57 87 56 83 C59 81 60 77 59 74 C61 70 61 65 59 61 C61 58 62 54 61 50 C61 46 58 43 54 36 Z"/>
+    <!-- Right Lion (Profile) -->
+    <path d="M106 36 C110 36 114 39 114 44 C114 48 112 51 109 53 C111 57 112 61 111 66 C114 65 118 66 120 70 C122 74 120 78 117 81 C118 85 117 89 114 92 C111 95 107 96 103 95 L98 108 L91 106 L95 91 C99 90 103 87 104 83 C101 81 100 77 101 74 C99 70 99 65 101 61 C99 58 98 54 99 50 C99 46 102 43 106 36 Z"/>
+    <!-- Abacus Platform -->
+    <rect x="28" y="132" width="104" height="12" rx="2"/>
+    <rect x="24" y="146" width="112" height="6" rx="1"/>
+    <!-- Ashoka Chakra in Center of Abacus -->
+    <circle cx="80" cy="138" r="5" fill="#FFFFFF" stroke="#123B66" stroke-width="1.5"/>
+    <circle cx="80" cy="138" r="1.5" fill="#123B66"/>
+    <!-- Bull on Right, Horse on Left -->
+    <path d="M42 135 C40 135 38 137 38 139 C38 141 40 142 43 142 C46 142 48 140 48 138 C48 136 45 135 42 135 Z"/>
+    <path d="M118 135 C120 135 122 137 122 139 C122 141 120 142 117 142 C114 142 112 140 112 138 C112 136 115 135 118 135 Z"/>
+    <!-- Base Plinth -->
+    <path d="M34 154 L126 154 L120 168 L40 168 Z"/>
+    <!-- Devanagari Motto: सत्यमेव जयते -->
+    <text x="80" y="186" text-anchor="middle" font-family="'Noto Sans Devanagari', 'Inter', sans-serif" font-size="12" font-weight="700" fill="#123B66" letter-spacing="1.5">सत्यमेव जयते</text>
+    <text x="80" y="200" text-anchor="middle" font-family="'Inter', sans-serif" font-size="8" font-weight="600" fill="#5B6570" letter-spacing="1">GOVERNMENT OF INDIA</text>
+  </g>
+</svg>

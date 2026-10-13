@@ -50,8 +50,6 @@ class CloudObjectStorageProvider(BaseStorageProvider):
 
     def save(self, filename: str, content: bytes, content_type: str = "image/jpeg") -> str:
         unique_name = f"{uuid.uuid4().hex}_{os.path.basename(filename)}"
-        # If real boto3 or cloud client is configured with credentials:
-        # In cloud environment, uploads directly to S3 / Cloud Bucket
         return f"https://{self.bucket_name}.s3.{self.region}.amazonaws.com/link-x8/{unique_name}"
 
     def get_health(self) -> StorageHealthOut:
@@ -59,6 +57,34 @@ class CloudObjectStorageProvider(BaseStorageProvider):
             storage_backend="CLOUD_OBJECT_STORAGE_S3",
             bucket_or_path=self.bucket_name,
             is_ready=True,
+            total_objects_stored=0
+        )
+
+
+class SupabaseStorageProvider(BaseStorageProvider):
+    def __init__(self, bucket_name: str = "field-report-evidence"):
+        self.bucket_name = bucket_name
+        self._local_fallback = LocalStorageProvider()
+
+    def save(self, filename: str, content: bytes, content_type: str = "image/jpeg") -> str:
+        unique_name = f"{uuid.uuid4().hex}_{os.path.basename(filename)}"
+        try:
+            from app.core.supabase import supabase_client
+            if supabase_client.is_configured:
+                uploaded_url = supabase_client.upload_evidence(unique_name, content, content_type)
+                if uploaded_url:
+                    return uploaded_url
+        except Exception as e:
+            logger.warning(f"Supabase storage upload failed, falling back to local: {e}")
+        return self._local_fallback.save(filename, content, content_type)
+
+    def get_health(self) -> StorageHealthOut:
+        from app.core.supabase import supabase_client
+        health = supabase_client.get_health()
+        return StorageHealthOut(
+            storage_backend="SUPABASE_STORAGE",
+            bucket_or_path=self.bucket_name,
+            is_ready=health.get("connected", True),
             total_objects_stored=0
         )
 
@@ -71,7 +97,11 @@ class StorageService:
     def get_provider(cls) -> BaseStorageProvider:
         if cls._provider is None:
             backend = getattr(settings, "STORAGE_BACKEND", "LOCAL").upper()
-            if backend in ["S3", "CLOUD", "SUPABASE"]:
+            if backend in ["SUPABASE"]:
+                cls._provider = SupabaseStorageProvider(
+                    bucket_name=getattr(settings, "SUPABASE_STORAGE_BUCKET", "field-report-evidence")
+                )
+            elif backend in ["S3", "CLOUD"]:
                 cls._provider = CloudObjectStorageProvider(
                     bucket_name=getattr(settings, "S3_BUCKET_NAME", "link-x8-assets")
                 )

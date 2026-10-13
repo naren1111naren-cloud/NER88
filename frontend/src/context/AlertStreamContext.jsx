@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import api, { API_BASE_URL } from '../services/api';
+import { supabase } from '../utils/supabase';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
 
@@ -21,7 +22,7 @@ export const AlertStreamProvider = ({ children }) => {
       type: 'SYSTEM',
       badge: 'ONLINE',
       badgeColor: 'bg-emerald-100 text-emerald-800',
-      message: 'LINK X8 Live Decision Intelligence Loop Active'
+      message: 'NER88 Live Decision Intelligence Loop Active'
     }
   ]);
 
@@ -38,7 +39,7 @@ export const AlertStreamProvider = ({ children }) => {
       type,
       message,
       badge: badge || type,
-      badgeColor: badgeColor || 'bg-blue-100 text-blue-800'
+      badgeColor: badgeColor || 'bg-emerald-100 text-emerald-800'
     };
     setLiveEventFeed((prev) => [newItem, ...prev.slice(0, 40)]);
   }, []);
@@ -127,7 +128,7 @@ export const AlertStreamProvider = ({ children }) => {
               prev.map((a) => (a.id === data.id ? { ...a, ...data } : a))
             );
             showToast(`✓ Alert #${data.id} acknowledged by ${data.acknowledged_by || 'Dispatcher'}`, 'info');
-            addEventFeedItem('AUDIT', `Alert #${data.id} acknowledged`, 'ACK', 'bg-blue-100 text-blue-800');
+            addEventFeedItem('AUDIT', `Alert #${data.id} acknowledged`, 'ACK', 'bg-emerald-100 text-emerald-800');
             return;
           }
 
@@ -195,6 +196,90 @@ export const AlertStreamProvider = ({ children }) => {
       if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
     };
   }, [connectSSE, fetchAlerts]);
+
+  // 3. Supabase Realtime Subscription for operational entities (Vehicles, Corridors, Alerts, Field Reports)
+  useEffect(() => {
+    let channel = null;
+    try {
+      channel = supabase
+        .channel('ner88-operations-realtime')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'alerts' },
+          (payload) => {
+            if (payload.eventType === 'INSERT') {
+              const newAlert = payload.new;
+              if (newAlert && newAlert.id && !seenAlertIds.current.has(newAlert.id)) {
+                seenAlertIds.current.add(newAlert.id);
+                setAlerts((prev) => [newAlert, ...prev.filter((a) => a.id !== newAlert.id)]);
+                setUnreadCount((prev) => prev + 1);
+                showToast(`🚨 Realtime Alert: ${newAlert.title}`, newAlert.severity === 'CRITICAL' ? 'error' : 'warning');
+                addEventFeedItem('REALTIME_ALERT', `${newAlert.title} (${newAlert.location || 'Corridor'})`, newAlert.severity, 'bg-rose-100 text-rose-800');
+              }
+            } else if (payload.eventType === 'UPDATE') {
+              setAlerts((prev) =>
+                prev.map((a) => (a.id === payload.new.id ? { ...a, ...payload.new } : a))
+              );
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'vehicles' },
+          (payload) => {
+            const v = payload.new;
+            if (v && v.vehicle_code) {
+              setLiveVehicles((prev) => ({
+                ...prev,
+                [v.vehicle_code]: {
+                  vehicle_code: v.vehicle_code,
+                  latitude: v.current_lat,
+                  longitude: v.current_lng,
+                  speed_kmh: v.speed_kmh,
+                  heading_deg: v.heading_deg,
+                  status: v.status,
+                  risk_level: v.risk_level,
+                  updatedAt: Date.now()
+                }
+              }));
+              addEventFeedItem('SUPABASE_GPS', `${v.vehicle_code} location updated [${v.current_lat?.toFixed(3)}, ${v.current_lng?.toFixed(3)}]`, 'REALTIME', 'bg-blue-100 text-blue-800');
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'field_reports' },
+          (payload) => {
+            if (payload.eventType === 'INSERT') {
+              const report = payload.new;
+              addEventFeedItem('FIELD_REPORT', `New field report synced: ${report.report_type} (${report.location_name || ''})`, 'SYNCED', 'bg-purple-100 text-purple-800');
+              showToast(`✓ Field Report Synced: ${report.report_type}`, 'info');
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'corridors' },
+          (payload) => {
+            const c = payload.new;
+            addEventFeedItem('CORRIDOR', `${c.name || c.corridor_code} accessibility is now ${c.accessibility_status} (Score: ${c.accessibility_score})`, c.accessibility_status, c.accessibility_status === 'BLOCKED' ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800');
+          }
+        )
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log('[Supabase Realtime] Operations channel active');
+          }
+        });
+    } catch (err) {
+      console.warn('[Supabase Realtime Warning]', err);
+    }
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [addEventFeedItem, showToast]);
 
   // Acknowledge alert with audit trail
   const acknowledgeAlert = async (alertId, notes = '') => {

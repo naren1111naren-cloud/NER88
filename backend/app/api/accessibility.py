@@ -1,5 +1,6 @@
 from typing import List, Dict, Any, Optional
 from datetime import datetime
+import json
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
@@ -7,7 +8,9 @@ from app.database.database import get_db
 from app.models.models import Corridor, Bridge, District, Vehicle, Delivery, Incident, WeatherRecord, AuditLog, Alert
 from app.schemas.schemas import (
     CorridorOut, BridgeOut, BridgeStatusUpdate, DistrictOut,
-    AssetAccessibilityDetailOut, AccessibilitySummaryOut, APIResponse
+    AssetAccessibilityDetailOut, AccessibilitySummaryOut, APIResponse,
+    RouteAccessibilityEvaluationRequest, RouteAccessibilityEvaluationOut,
+    RouteRiskAnalysisRequest, RouteRiskAnalysisOut
 )
 from app.services.accessibility_service import AccessibilityEngine
 
@@ -142,6 +145,21 @@ def get_asset_accessibility_detail(asset_type: str, asset_id: str, db: Session =
         # Count impacted vehicles
         aff_vehs = db.query(Delivery).filter(Delivery.destination_city == cor.destination, Delivery.status.in_(["IN_TRANSIT", "DELAYED"])).count()
 
+        # Parse data_sources safely
+        sources = []
+        if cor.data_sources:
+            try:
+                sources = json.loads(cor.data_sources)
+            except Exception:
+                sources = [s.strip() for s in cor.data_sources.split(",") if s.strip()]
+        if not sources:
+            sources = ["Open-Meteo Live API", "Field Officer Inspection Incident Feed", "BRO Bridge Clearance Registry"]
+
+        acc_stat = cor.accessibility_status or cor.status or "OPEN"
+        expl = f"Accessibility {int(round(cor.accessibility_score))}/100 — {acc_stat}"
+        if cor.factor_summary:
+            expl += f" ({cor.factor_summary})"
+
         return {
             "asset_id": cor.corridor_code,
             "asset_type": "corridor",
@@ -149,6 +167,7 @@ def get_asset_accessibility_detail(asset_type: str, asset_id: str, db: Session =
             "corridor": cor.corridor_code,
             "state": cor.states_covered,
             "status": cor.status,
+            "accessibility_status": acc_stat,
             "accessibility_score": cor.accessibility_score,
             "risk_level": cor.risk_level,
             "current_condition": cor.current_condition,
@@ -158,7 +177,10 @@ def get_asset_accessibility_detail(asset_type: str, asset_id: str, db: Session =
             "estimated_delay_mins": cor.estimated_delay_mins,
             "affected_vehicles_count": aff_vehs,
             "reason": cor.reason or "Normal road and bridge passage",
+            "factor_summary": cor.factor_summary or cor.reason,
+            "explanation": expl,
             "data_source": cor.data_source or "INTEGRATED_ACCESSIBILITY_ENGINE",
+            "data_sources": sources,
             "data_confidence": cor.data_confidence or "HIGH",
             "last_updated": cor.last_updated
         }
@@ -168,6 +190,8 @@ def get_asset_accessibility_detail(asset_type: str, asset_id: str, db: Session =
         if not brg:
             raise HTTPException(status_code=404, detail="Bridge not found")
         AccessibilityEngine.recalculate_bridge_accessibility(brg, db)
+
+        expl = f"Accessibility {int(round(brg.accessibility_score))}/100 — {brg.status}"
 
         return {
             "asset_id": brg.bridge_code,
@@ -179,6 +203,7 @@ def get_asset_accessibility_detail(asset_type: str, asset_id: str, db: Session =
             "state": brg.state,
             "corridor": brg.corridor_code,
             "status": brg.status,
+            "accessibility_status": brg.status,
             "accessibility_score": brg.accessibility_score,
             "risk_level": brg.risk_level,
             "current_condition": brg.condition_description,
@@ -188,7 +213,10 @@ def get_asset_accessibility_detail(asset_type: str, asset_id: str, db: Session =
             "estimated_delay_mins": 0 if brg.status == "OPERATIONAL" else (180 if brg.status == "CLOSED" else 45),
             "affected_vehicles_count": 0,
             "reason": brg.condition_description or f"Bridge status is {brg.status}",
+            "factor_summary": brg.restriction_details or brg.condition_description,
+            "explanation": expl,
             "data_source": brg.data_source,
+            "data_sources": [brg.data_source, "BRO Bridge Clearance Registry"],
             "data_confidence": brg.data_confidence,
             "last_updated": brg.last_updated
         }
@@ -273,3 +301,97 @@ def trigger_manual_recalculation(db: Session = Depends(get_db)):
         "message": "Regional accessibility intelligence recalculated across all roads, bridges, districts, and vehicles.",
         "details": res
     }
+
+@router.post("/evaluate-route", response_model=RouteAccessibilityEvaluationOut)
+def evaluate_route_accessibility_endpoint(payload: RouteAccessibilityEvaluationRequest, db: Session = Depends(get_db)):
+    """
+    Evaluates transparent, deterministic mathematical route accessibility:
+    Final Score = clamp(100 + Weather + Terrain + Road + Hazard, 0, 100).
+    Ensures that factor breakdown and total score are strictly identical.
+    """
+    return AccessibilityEngine.evaluate_route_accessibility_assessment(
+        db=db,
+        corridor_id=payload.corridor_id,
+        origin=payload.origin or "Guwahati",
+        destination=payload.destination or "Shillong",
+        dist_km=payload.dist_km or 103.0,
+        elev_gain_m=payload.elev_gain_m or 1440.0,
+        road_name=payload.road_name or "NH-40",
+        lanes=payload.lanes if payload.lanes is not None else 4,
+        road_surface=payload.road_surface or "Paved",
+        rainfall_mm_hr=payload.rainfall_mm_hr,
+        lat=payload.lat,
+        lng=payload.lng
+    )
+
+@router.get("/evaluate-route", response_model=RouteAccessibilityEvaluationOut)
+def evaluate_route_accessibility_get_endpoint(
+    origin: str = Query("Guwahati", description="Origin city"),
+    destination: str = Query("Shillong", description="Destination city"),
+    dist_km: float = Query(103.0, description="Route distance in km"),
+    elev_gain_m: float = Query(1440.0, description="Elevation gain in meters"),
+    road_name: str = Query("NH-40", description="Road / NH identifier"),
+    lanes: int = Query(4, description="Lanes count"),
+    road_surface: str = Query("Paved", description="Road surface type"),
+    rainfall_mm_hr: Optional[float] = Query(None, description="Precipitation rate in mm/hr"),
+    lat: Optional[float] = Query(None, description="Origin Latitude"),
+    lng: Optional[float] = Query(None, description="Origin Longitude"),
+    db: Session = Depends(get_db)
+):
+    """GET query version for route accessibility assessment evaluation."""
+    return AccessibilityEngine.evaluate_route_accessibility_assessment(
+        db=db,
+        origin=origin,
+        destination=destination,
+        dist_km=dist_km,
+        elev_gain_m=elev_gain_m,
+        road_name=road_name,
+        lanes=lanes,
+        road_surface=road_surface,
+        rainfall_mm_hr=rainfall_mm_hr,
+        lat=lat,
+        lng=lng
+    )
+
+@router.post("/evaluate-segments", response_model=RouteRiskAnalysisOut)
+def evaluate_route_segments_endpoint(payload: RouteRiskAnalysisRequest, db: Session = Depends(get_db)):
+    """Evaluates multi-segment route risk and vulnerability for a corridor."""
+    return AccessibilityEngine.evaluate_route_risk_segments(
+        db=db,
+        origin=payload.origin,
+        destination=payload.destination,
+        route_name=payload.route_name,
+        vuln_seg=payload.vuln_seg,
+        vuln_reason=payload.vuln_reason,
+        rainfall_mm_hr=payload.rainfall_mm_hr,
+        dist_km=payload.dist_km,
+        elev_gain_m=payload.elev_gain_m,
+        waypoints=payload.waypoints
+    )
+
+@router.get("/evaluate-segments", response_model=RouteRiskAnalysisOut)
+def evaluate_route_segments_get_endpoint(
+    origin: str = Query("Guwahati", description="Origin city"),
+    destination: str = Query("Shillong", description="Destination city"),
+    route_name: Optional[str] = Query("NH-40 Mountain Highway", description="Route / NH identifier"),
+    vuln_seg: Optional[str] = Query(None, description="Vulnerable segment name"),
+    vuln_reason: Optional[str] = Query(None, description="Vulnerability reason"),
+    rainfall_mm_hr: Optional[float] = Query(None, description="Precipitation rate in mm/hr"),
+    dist_km: Optional[float] = Query(103.0, description="Route distance in km"),
+    elev_gain_m: Optional[float] = Query(1440.0, description="Elevation gain in meters"),
+    db: Session = Depends(get_db)
+):
+    """GET query version for route segments risk analysis."""
+    return AccessibilityEngine.evaluate_route_risk_segments(
+        db=db,
+        origin=origin,
+        destination=destination,
+        route_name=route_name,
+        vuln_seg=vuln_seg,
+        vuln_reason=vuln_reason,
+        rainfall_mm_hr=rainfall_mm_hr,
+        dist_km=dist_km,
+        elev_gain_m=elev_gain_m
+    )
+
+

@@ -52,6 +52,25 @@ ROUTE_C_NORTHERN_WAYPOINTS = [
     [24.8170, 93.9368]  # Imphal
 ]
 
+# Master SIH Demonstration Corridor Waypoints: Guwahati -> Shillong (GS Road & Bypass)
+PRIMARY_GUWAHATI_SHILLONG_WAYPOINTS = [
+    [26.1445, 91.7362], # Guwahati (Khanapara / Basistha Interchange)
+    [26.1050, 91.8200], # Jorabat Gateway
+    [25.9000, 91.8800], # Nongpoh (Mid-corridor checkpoint)
+    [25.7500, 91.9000], # Umsning Bypass
+    [25.6600, 91.9100], # Umiam / Barapani Lake
+    [25.5788, 91.8933]  # Shillong (Civil Hospital Hub / Police Bazar)
+]
+
+ALTERNATE_GUWAHATI_SHILLONG_WAYPOINTS = [
+    [26.1445, 91.7362], # Guwahati
+    [26.1850, 92.1500], # Jagiroad (NH27 East Link)
+    [25.9200, 92.2100], # Karbi Hills Bypass / Baithalangso
+    [25.6800, 92.0200], # Bhoirymbong Link (Shillong Eastern Bypass)
+    [25.6100, 91.9500], # NEIGRIHMS Junction
+    [25.5788, 91.8933]  # Shillong
+]
+
 OPTIMIZATION_OBJECTIVES = {
     "BALANCED": {
         "title": "Balanced Multi-Factor Optimization",
@@ -176,7 +195,59 @@ class RoutingService:
                 }
             ]
 
-        # Inter-state pairs (e.g. Guwahati -> Shillong, Silchar -> Agartala, etc.)
+        # Master Scenario: Guwahati -> Shillong Corridor (NH40 vs NH106 Eastern Bypass)
+        if ("Guwahati" in norm_orig or "Shillong" in norm_orig) and ("Shillong" in norm_dest or "Guwahati" in norm_dest):
+            return [
+                {
+                    "id": "ROUTE_A",
+                    "name": "Route A (Direct GS Road - NH40)",
+                    "corridor_code": "COR-NH40",
+                    "distance_km": 98.0,
+                    "estimated_travel_time_hours": 2.5,
+                    "estimated_delay_mins": 0,
+                    "base_risk_score": 18.0,
+                    "accessibility_score": 94.0,
+                    "resilience_score": 86.0,
+                    "bridge_clearance_status": "OPERATIONAL (Umiam Bridge Verified)",
+                    "traffic_congestion_index": 0.35,
+                    "waypoints": PRIMARY_GUWAHATI_SHILLONG_WAYPOINTS
+                },
+                {
+                    "id": "ROUTE_B",
+                    "name": "Route B (Eastern Bypass via Jagiroad - Bhoirymbong / NH106)",
+                    "corridor_code": "COR-NH106-BYPASS",
+                    "distance_km": 134.0,
+                    "estimated_travel_time_hours": 3.8,
+                    "estimated_delay_mins": 78,
+                    "base_risk_score": 28.0,
+                    "accessibility_score": 88.0,
+                    "resilience_score": 80.0,
+                    "bridge_clearance_status": "OPERATIONAL (Dual Lane Verified)",
+                    "traffic_congestion_index": 0.20,
+                    "waypoints": ALTERNATE_GUWAHATI_SHILLONG_WAYPOINTS
+                },
+                {
+                    "id": "ROUTE_C",
+                    "name": "Route C (Western Hill Trunk via Rani / Byrnihat Rural Link)",
+                    "corridor_code": "COR-WEST-RURAL",
+                    "distance_km": 148.0,
+                    "estimated_travel_time_hours": 4.5,
+                    "estimated_delay_mins": 120,
+                    "base_risk_score": 46.0,
+                    "accessibility_score": 72.0,
+                    "resilience_score": 65.0,
+                    "bridge_clearance_status": "RESTRICTED (Single-lane hill culverts)",
+                    "traffic_congestion_index": 0.15,
+                    "waypoints": [
+                        [26.1445, 91.7362], # Guwahati
+                        [26.0400, 91.6200], # Rani Reserve
+                        [25.8500, 91.7000], # Nongkhyllem Link
+                        [25.5788, 91.8933]  # Shillong
+                    ]
+                }
+            ]
+
+        # Inter-state pairs (e.g. Silchar -> Agartala, etc.)
         orig_pt = NER_NODES.get(norm_orig, [26.1445, 91.7362])
         dest_pt = NER_NODES.get(norm_dest, [24.8170, 93.9368])
         base_dist = RoutingService.calculate_distance_km(orig_pt, dest_pt)
@@ -304,7 +375,7 @@ class RoutingService:
             # Blockage check
             cand_blocked = False
             cand_blockage_reason = ""
-            if cid == "ROUTE_A" or corridor in ["COR-NH27", "COR-PRIMARY"]:
+            if cid == "ROUTE_A" or corridor in ["COR-NH27", "COR-PRIMARY", "COR-NH40"]:
                 if is_primary_blocked:
                     cand_blocked = True
                     cand_blockage_reason = blockage_reason or "Pass impassable due to active incident"

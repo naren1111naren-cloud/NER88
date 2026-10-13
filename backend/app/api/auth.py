@@ -3,13 +3,31 @@ from sqlalchemy.orm import Session
 from app.database.database import get_db
 from app.models.models import User, AuditLog
 from app.schemas.schemas import LoginRequest, Token, UserCreate, UserOut
-from app.core.security import verify_password, get_password_hash, create_access_token
+from app.core.security import verify_password, get_password_hash, create_access_token, get_current_user
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post("/login", response_model=Token)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == payload.email).first()
+    clean_identifier = (payload.email or "").strip().lower()
+    
+    # Try exact match first
+    user = db.query(User).filter(User.email.ilike(clean_identifier)).first()
+    
+    # If not found and input has no '@', try appending default domains
+    if not user and "@" not in clean_identifier:
+        user = db.query(User).filter(User.email.ilike(f"{clean_identifier}@linkx8.in")).first()
+        if not user:
+            user = db.query(User).filter(User.email.ilike(f"{clean_identifier}@nerlogiai.in")).first()
+            
+    # If not found and input has '@linkx8.in', try '@nerlogiai.in' as fallback (and vice versa)
+    if not user and clean_identifier.endswith("@linkx8.in"):
+        prefix = clean_identifier.replace("@linkx8.in", "")
+        user = db.query(User).filter(User.email.ilike(f"{prefix}@nerlogiai.in")).first()
+    elif not user and clean_identifier.endswith("@nerlogiai.in"):
+        prefix = clean_identifier.replace("@nerlogiai.in", "")
+        user = db.query(User).filter(User.email.ilike(f"{prefix}@linkx8.in")).first()
+
     if not user or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
     
@@ -65,3 +83,27 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
     db.commit()
 
     return user
+
+@router.get("/me")
+def get_current_user_profile(
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Returns the authenticated operator profile, resolving metadata from Supabase if active.
+    """
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "full_name": current_user.full_name,
+        "role": current_user.role,
+        "is_active": current_user.is_active,
+        "created_at": current_user.created_at
+    }
+
+@router.get("/supabase-status")
+def get_supabase_health_status():
+    """
+    Returns the operational connectivity status of the Supabase cloud backend.
+    """
+    from app.core.supabase import supabase_client
+    return supabase_client.get_health()

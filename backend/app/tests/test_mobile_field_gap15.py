@@ -71,6 +71,13 @@ def test_offline_batch_sync_success():
         audit = db.query(AuditLog).filter(AuditLog.action == "SYNC_FIELD_REPORTS").first()
         assert audit is not None
     finally:
+        db.query(FieldReport).filter(FieldReport.report_code == report_code).delete()
+        db.query(Incident).filter(Incident.location_name == "Gangtok North Pass (NH10)").delete()
+        db.query(Alert).filter(Alert.location == "Gangtok North Pass (NH10)").delete()
+        bridge = db.query(Bridge).filter(Bridge.bridge_code == "BRG-NAMGANG").first()
+        if bridge:
+            bridge.status = "OPERATIONAL"
+        db.commit()
         db.close()
 
 def test_coordinate_bounds_validation():
@@ -128,4 +135,8 @@ def test_idempotent_duplicate_prevention():
         assert len(matches) == 1
         assert matches[0].description == "Updated field observation post-inspection"
     finally:
+        db.query(FieldReport).filter(FieldReport.report_code == report_code).delete()
+        db.query(Incident).filter(Incident.description.like(f"%{report_code}%")).delete()
+        db.query(Incident).filter(Incident.location_name == "Guwahati Bypass").delete()
+        db.commit()
         db.close()

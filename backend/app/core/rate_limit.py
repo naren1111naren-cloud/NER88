@@ -1,7 +1,5 @@
 """
 High-performance In-Memory Rate Limiting Middleware for LINK X8
-Provides IP-based sliding window rate limiting on public and write endpoints.
-Returns HTTP 429 Too Many Requests when threshold is exceeded.
 """
 
 import time
@@ -16,11 +14,9 @@ class SlidingWindowRateLimiter:
     def __init__(self, default_limit: int = 120, window_seconds: int = 60):
         self.default_limit = default_limit
         self.window_seconds = window_seconds
-        # client_ip -> list of timestamp floats
         self.requests: Dict[str, List[float]] = defaultdict(list)
-        # Custom limits per path prefix
         self.custom_limits: Dict[str, int] = {
-            "/api/v1/auth/login": 20,       # 20 attempts per minute
+            "/api/v1/auth/login": 20,
             "/api/v1/incidents": 60,
             "/api/v1/field-reports/sync": 40,
         }
@@ -31,23 +27,26 @@ class SlidingWindowRateLimiter:
                 return limit
         return self.default_limit
 
+    def _get_bucket_key(self, client_ip: str, path: str) -> str:
+        for prefix in self.custom_limits.keys():
+            if path.startswith(prefix):
+                return f"{client_ip}:{prefix}"
+        return f"{client_ip}:__default__"
+
     def is_allowed(self, client_ip: str, path: str) -> Tuple[bool, int, int]:
-        """
-        Returns (is_allowed, remaining_requests, limit)
-        """
         now = time.time()
         window_start = now - self.window_seconds
         limit = self._get_limit_for_path(path)
+        bucket_key = self._get_bucket_key(client_ip, path)
 
-        # Prune older entries
-        timestamps = self.requests[client_ip]
-        self.requests[client_ip] = [t for t in timestamps if t > window_start]
+        timestamps = self.requests[bucket_key]
+        self.requests[bucket_key] = [t for t in timestamps if t > window_start]
 
-        current_count = len(self.requests[client_ip])
+        current_count = len(self.requests[bucket_key])
         if current_count >= limit:
             return False, 0, limit
 
-        self.requests[client_ip].append(now)
+        self.requests[bucket_key].append(now)
         remaining = max(0, limit - (current_count + 1))
         return True, remaining, limit
 
@@ -60,26 +59,25 @@ limiter = SlidingWindowRateLimiter(default_limit=150, window_seconds=60)
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        # Skip rate limiting for static docs, health checks, or test runner bypass
         path = request.url.path
         if path in ["/docs", "/redoc", "/openapi.json", "/api/v1/health", "/api/v1/alerts/stream"]:
             return await call_next(request)
 
-        # Determine client identifier
         forwarded = request.headers.get("X-Forwarded-For")
-        if forwarded:
+        real_ip = request.headers.get("X-Real-IP")
+        if forwarded and forwarded.split(",")[0].strip():
             client_ip = forwarded.split(",")[0].strip()
+        elif real_ip and real_ip.strip():
+            client_ip = real_ip.strip()
         else:
             client_ip = request.client.host if request.client else "127.0.0.1"
 
         if client_ip == "testclient" and not request.headers.get("X-Test-Rate-Limit"):
-            # Allow automated test suite execution without artificial throttle
             response = await call_next(request)
             response.headers["X-RateLimit-Limit"] = str(limiter.default_limit)
             response.headers["X-RateLimit-Remaining"] = str(limiter.default_limit)
             return response
 
-        # Check rate limit
         allowed, remaining, limit = limiter.is_allowed(client_ip, path)
         if not allowed:
             return JSONResponse(
@@ -99,3 +97,4 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         response.headers["X-RateLimit-Limit"] = str(limit)
         response.headers["X-RateLimit-Remaining"] = str(remaining)
         return response
+

@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "LINK X8"
+    PROJECT_NAME: str = "NER88"
     API_V1_STR: str = "/api/v1"
 
     ENVIRONMENT: str = os.getenv(
@@ -35,6 +35,35 @@ class Settings(BaseSettings):
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",
         "sqlite:///./ner_logiai.db"
+    )
+
+    # ---------------------------------------------------------
+    # SUPABASE INTEGRATION
+    # ---------------------------------------------------------
+
+    SUPABASE_URL: str = os.getenv(
+        "SUPABASE_URL",
+        "https://fprrdioltnkjbifgluro.supabase.co"
+    )
+
+    SUPABASE_KEY: str = os.getenv(
+        "SUPABASE_KEY",
+        os.getenv("SUPABASE_ANON_KEY", "sb_publishable_CkX_0FD87YpOu5B9bYtK3w_lUk_SAWo")
+    )
+
+    SUPABASE_SERVICE_ROLE_KEY: str = os.getenv(
+        "SUPABASE_SERVICE_ROLE_KEY",
+        ""
+    )
+
+    SUPABASE_JWT_SECRET: str = os.getenv(
+        "SUPABASE_JWT_SECRET",
+        ""
+    )
+
+    SUPABASE_STORAGE_BUCKET: str = os.getenv(
+        "SUPABASE_STORAGE_BUCKET",
+        "field-report-evidence"
     )
 
     # ---------------------------------------------------------

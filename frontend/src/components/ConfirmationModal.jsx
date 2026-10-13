@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { AlertTriangle, Trash2, CheckCircle2, X } from 'lucide-react';
 
 export const ConfirmationModal = ({
@@ -12,6 +13,17 @@ export const ConfirmationModal = ({
   onCancel,
   loading = false
 }) => {
+  // Body scroll lock
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' && isOpen && !loading) {
@@ -22,52 +34,55 @@ export const ConfirmationModal = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, loading, onCancel]);
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === 'undefined') return null;
 
-  let btnClass = 'bg-rose-600 hover:bg-rose-700 text-white';
-  let icon = <Trash2 className="w-5 h-5 text-rose-600" />;
+  let btnClass = 'bg-[#C62828] hover:bg-[#A31D1D] text-white';
+  let icon = <Trash2 className="w-5 h-5 text-[#C62828]" />;
 
   if (type === 'primary') {
-    btnClass = 'bg-gradient-to-r from-purple-600 via-violet-600 to-teal-500 hover:opacity-90 text-white';
-    icon = <CheckCircle2 className="w-5 h-5 text-purple-600" />;
+    btnClass = 'bg-[#15803D] hover:bg-[#0B3B24] text-white font-bold';
+    icon = <CheckCircle2 className="w-5 h-5 text-[#15803D]" />;
   } else if (type === 'warning') {
-    btnClass = 'bg-amber-600 hover:bg-amber-700 text-white';
-    icon = <AlertTriangle className="w-5 h-5 text-amber-600" />;
+    btnClass = 'bg-[#D98C00] hover:bg-[#B27200] text-white';
+    icon = <AlertTriangle className="w-5 h-5 text-[#D98C00]" />;
   }
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-[#13261D]/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget && !loading) onCancel();
       }}
     >
-      <div className="w-full max-w-md bg-white border border-[#E5E7EB] rounded-2xl p-6 space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="relative z-[110] w-full max-w-md bg-white border border-[#D5E4DB] rounded-xl p-6 space-y-4 shadow-xl animate-in fade-in zoom-in-95 duration-150 text-[#13261D]"
+      >
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-lg bg-[#F7FAF8] border border-[#D5E4DB] flex items-center justify-center shrink-0">
               {icon}
             </div>
             <div>
-              <h3 className="text-base font-extrabold text-[#1F2937]">{title}</h3>
-              <p className="text-xs text-slate-500 mt-0.5">{message}</p>
+              <h3 className="text-base font-bold text-[#0B3B24]">{title}</h3>
+              <p className="text-xs text-[#3E5649] mt-0.5">{message}</p>
             </div>
           </div>
           <button
             onClick={onCancel}
             disabled={loading}
-            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg transition"
+            className="text-[#627B6E] hover:text-[#13261D] p-1 rounded-lg transition cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="pt-3 border-t border-[#E5E7EB] flex items-center justify-end gap-2 text-xs">
+        <div className="pt-3 border-t border-[#D5E4DB] flex items-center justify-end gap-2 text-xs">
           <button
             type="button"
             onClick={onCancel}
             disabled={loading}
-            className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition"
+            className="px-4 py-2 rounded-lg bg-[#F7FAF8] hover:bg-[#EEF5F1] text-[#3E5649] hover:text-[#13261D] font-semibold border border-[#CCE0D5] transition cursor-pointer"
           >
             {cancelText}
           </button>
@@ -75,12 +90,15 @@ export const ConfirmationModal = ({
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            className={`px-4 py-2 rounded-xl font-bold transition shadow-xs active:scale-95 disabled:opacity-50 ${btnClass}`}
+            className={`px-4 py-2 rounded-lg font-bold transition shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer ${btnClass}`}
           >
             {loading ? 'Processing...' : confirmText}
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
+
+export default ConfirmationModal;

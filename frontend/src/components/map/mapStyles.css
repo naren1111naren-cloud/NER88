@@ -1,0 +1,95 @@
+/* LINK X8 Light GIS Map Custom Styling */
+
+.leaflet-container {
+  background-color: #EEF5F1 !important;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+  z-index: 1;
+}
+
+/* Custom Marker Container */
+.custom-map-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Custom Leaflet Popup Styling */
+.leaflet-popup-content-wrapper {
+  background: #FFFFFF !important;
+  color: #13261D !important;
+  border: 1px solid #D5E4DB !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+  padding: 0 !important;
+}
+
+.leaflet-popup-content {
+  margin: 12px 14px !important;
+  line-height: 1.4 !important;
+  color: #13261D !important;
+}
+
+.leaflet-popup-tip {
+  background: #FFFFFF !important;
+  border-left: 1px solid #D5E4DB !important;
+  border-top: 1px solid #D5E4DB !important;
+}
+
+.leaflet-popup-close-button {
+  color: #627B6E !important;
+  top: 8px !important;
+  right: 8px !important;
+  font-size: 16px !important;
+}
+
+.leaflet-popup-close-button:hover {
+  color: #13261D !important;
+}
+
+/* Tooltip Styling */
+.leaflet-tooltip {
+  background: #0B3B24 !important;
+  color: #FFFFFF !important;
+  border: 1px solid #052416 !important;
+  border-radius: 6px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 4px 8px !important;
+}
+
+.leaflet-tooltip-top:before {
+  border-top-color: #0B3B24 !important;
+}
+
+.leaflet-tooltip-bottom:before {
+  border-bottom-color: #0B3B24 !important;
+}
+
+.leaflet-tooltip-left:before {
+  border-left-color: #0B3B24 !important;
+}
+
+.leaflet-tooltip-right:before {
+  border-right-color: #0B3B24 !important;
+}
+
+/* Attribution styling */
+.leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.9) !important;
+  color: #3E5649 !important;
+  font-size: 10px !important;
+  border-radius: 4px !important;
+  padding: 2px 6px !important;
+  margin: 4px !important;
+  border: 1px solid #D5E4DB !important;
+}
+
+.leaflet-control-attribution a {
+  color: #15803D !important;
+  text-decoration: none !important;
+}
+
+.leaflet-control-attribution a:hover {
+  text-decoration: underline !important;
+}

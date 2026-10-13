@@ -1,6 +1,7 @@
+import json
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
 # Standard Response Wrapper Helper
 class APIResponse(BaseModel):
@@ -15,7 +16,7 @@ class Token(BaseModel):
     user: Dict[str, Any]
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: str
     password: str
 
 class UserCreate(BaseModel):
@@ -220,6 +221,27 @@ class DeliveryOut(BaseModel):
     actual_delivery_duration_hours: Optional[float] = None
     created_at: datetime
 
+    # Phase 5 Logistics Shipment Model Compatibility Aliases (Section 4)
+    shipment_id: Optional[str] = None
+    commodity: Optional[str] = None
+    vehicle_id: Optional[int] = None
+    estimated_delivery: Optional[datetime] = None
+    actual_delivery: Optional[datetime] = None
+
+    @model_validator(mode='after')
+    def populate_shipment_aliases(self) -> 'DeliveryOut':
+        if not self.shipment_id:
+            self.shipment_id = self.delivery_code
+        if not self.commodity:
+            self.commodity = self.cargo_name
+        if not self.vehicle_id:
+            self.vehicle_id = self.assigned_vehicle_id
+        if not self.estimated_delivery:
+            self.estimated_delivery = self.revised_eta
+        if not self.actual_delivery:
+            self.actual_delivery = self.completed_at
+        return self
+
     class Config:
         from_attributes = True
 
@@ -232,17 +254,47 @@ class CorridorOut(BaseModel):
     destination: str
     states_covered: str
     status: str
+    accessibility_status: str = "OPEN"
     accessibility_score: float = 90.0
     risk_level: str
     current_condition: str
     weather_condition: str
     reason: Optional[str] = "Normal road and bridge passage"
+    factor_summary: Optional[str] = "Normal road and bridge passage"
+    explanation: Optional[str] = None
     estimated_delay_mins: int
     incident_count: int
     data_source: Optional[str] = "INTEGRATED_ACCESSIBILITY_ENGINE"
+    data_sources: Optional[List[str]] = Field(default_factory=lambda: ["Open-Meteo Live API", "Field Officer Inspection Incident Feed", "BRO Bridge Clearance Registry"])
     data_confidence: Optional[str] = "HIGH"
     polyline_coords: Optional[str] = None
     last_updated: datetime
+
+    @field_validator("data_sources", mode="before")
+    @classmethod
+    def parse_data_sources(cls, v):
+        if v is None:
+            return ["Open-Meteo Live API", "Field Officer Inspection Incident Feed", "BRO Bridge Clearance Registry"]
+        if isinstance(v, list):
+            return v
+        if isinstance(v, str):
+            try:
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    return parsed
+            except Exception:
+                return [s.strip() for s in v.split(",") if s.strip()]
+        return [str(v)]
+
+    @field_validator("explanation", mode="before")
+    @classmethod
+    def default_explanation(cls, v, info):
+        if v:
+            return v
+        data = info.data
+        score = data.get("accessibility_score", 90.0)
+        status = data.get("accessibility_status") or data.get("status", "OPEN")
+        return f"Accessibility {int(round(score))}/100 — {status}"
 
     class Config:
         from_attributes = True
@@ -359,6 +411,7 @@ class AssetAccessibilityDetailOut(BaseModel):
     state: Optional[str] = None
     corridor: Optional[str] = None
     status: str
+    accessibility_status: Optional[str] = "OPEN"
     accessibility_score: float
     risk_level: str
     current_condition: str
@@ -368,8 +421,43 @@ class AssetAccessibilityDetailOut(BaseModel):
     estimated_delay_mins: int
     affected_vehicles_count: int = 0
     reason: str
+    factor_summary: Optional[str] = None
+    explanation: Optional[str] = None
     data_source: str
+    data_sources: Optional[List[str]] = None
     data_confidence: str
+    last_updated: Optional[datetime] = None
+class AccessibilityFactorItem(BaseModel):
+    category: str
+    name: str
+    condition: str
+    impact: int
+    source: str
+    source_type: str
+
+class RouteAccessibilityEvaluationRequest(BaseModel):
+    corridor_id: Optional[str] = None
+    origin: Optional[str] = "Guwahati"
+    destination: Optional[str] = "Shillong"
+    dist_km: Optional[float] = 103.0
+    elev_gain_m: Optional[float] = 1440.0
+    road_name: Optional[str] = "NH-40"
+    lanes: Optional[int] = 4
+    road_surface: Optional[str] = "Paved"
+    rainfall_mm_hr: Optional[float] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+
+class RouteAccessibilityEvaluationOut(BaseModel):
+    score: int
+    base_score: int = 100
+    risk_level: str
+    summary_explanation: str
+    primary_risk: str
+    recommendation: str
+    recommendation_detail: str
+    factors: List[AccessibilityFactorItem]
+    data_quality: str
     last_updated: datetime
 
 class AccessibilitySummaryOut(BaseModel):
@@ -1243,3 +1331,143 @@ class VahanSuitabilityResponse(BaseModel):
     bridge_evaluation: Optional[Dict[str, Any]] = None
     route_advisory: Optional[str] = None
     disclaimer: str = "Derived by LINK X8 operational intelligence layer. MoRTH VAHAN provides vehicle registry parameters only."
+
+# =========================================================================
+# ROUTE RISK ANALYSIS & VULNERABILITY SEGMENTS SCHEMAS
+# =========================================================================
+
+class RouteRiskSegmentOut(BaseModel):
+    id: str  # "01", "02", etc.
+    name: str  # "Segment 04 — Umling Ridge"
+    short_name: str # "Umling Ridge"
+    risk_level: str  # "LOW", "CAUTION", "HIGH"
+    risk_score: int  # 0 to 100
+    reasons: List[str]  # ["🌧 Heavy rainfall", "⛰ Steep slopes"]
+    reason_summary: str  # "Heavy rain + steep slopes"
+    possible_impact: str  # "Landslide risk and travel delays"
+    recommended_action: str  # "Review alternate route"
+    is_highest_risk: bool = False
+    status_label: str = "LOW RISK" # "LOW RISK", "CAUTION", "HIGH RISK"
+    coordinates: Optional[List[List[float]]] = None
+
+class RouteRiskAnalysisRequest(BaseModel):
+    origin: str = "Guwahati"
+    destination: str = "Shillong"
+    route_name: Optional[str] = "NH-40 Mountain Highway"
+    vuln_seg: Optional[str] = "Segment 04 — Umling Ridge"
+    vuln_reason: Optional[str] = "Heavy rainfall + steep terrain increases slope saturation."
+    rainfall_mm_hr: Optional[float] = None
+    dist_km: Optional[float] = 103.0
+    elev_gain_m: Optional[float] = 1440.0
+    waypoints: Optional[List[List[float]]] = None
+
+class RouteRiskAnalysisOut(BaseModel):
+    origin: str
+    destination: str
+    route_name: str
+    total_sections: int
+    high_risk_count: int
+    caution_count: int
+    normal_count: int
+    primary_status: str  # "⚠ 1 HIGH-RISK SECTION DETECTED"
+    highest_risk_segment_id: str
+    selected_segment: RouteRiskSegmentOut
+    segments: List[RouteRiskSegmentOut]
+    data_quality: str = "HIGH"
+    sources: List[str] = ["LIVE • Open-Meteo", "MAP DATA • OpenStreetMap", "CALCULATED • LINK X8 Route Analysis"]
+    last_updated: datetime
+
+# =========================================================================
+# PHASE 2: DISRUPTION DETECTION & INTELLIGENT REROUTING SCHEMAS
+# =========================================================================
+
+class RouteDecisionOut(BaseModel):
+    id: int
+    decision_code: str
+    delivery_id: int
+    delivery_code: str
+    vehicle_id: Optional[int] = None
+    vehicle_code: Optional[str] = None
+    corridor_code: str
+    incident_id: Optional[int] = None
+    trigger_event: str
+    original_route_id: str
+    original_route_name: str
+    original_distance_km: float
+    original_travel_time_hours: float
+    original_eta: datetime
+    alternative_route_id: str
+    alternative_route_name: str
+    alternative_distance_km: float
+    alternative_travel_time_hours: float
+    new_eta: datetime
+    additional_distance_km: float
+    additional_time_minutes: int
+    risk_score_before: float
+    risk_score_after: float
+    status: str
+    rationale: Optional[str] = None
+    waypoints: Optional[List[List[float]]] = None
+    original_waypoints: Optional[List[List[float]]] = None
+    approved_by: Optional[str] = None
+    approved_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class ETAComparisonOut(BaseModel):
+    delivery_code: Optional[str] = None
+    vehicle_code: Optional[str] = None
+    origin: str
+    destination: str
+    corridor_code: str
+    original_route: Dict[str, Any]
+    alternative_route: Dict[str, Any]
+    comparison: Dict[str, Any]
+    predictive_components: List[str]
+    decision_code: Optional[str] = None
+    status: Optional[str] = None
+
+class AffectedVehicleItem(BaseModel):
+    vehicle_id: Optional[int] = None
+    vehicle_code: str
+    driver_name: Optional[str] = None
+    status: str
+    risk_level: str
+    current_lat: float
+    current_lng: float
+    destination_city: str
+
+class AffectedDeliveryItem(BaseModel):
+    delivery_id: int
+    delivery_code: str
+    cargo_name: str
+    priority: str
+    origin_city: str
+    destination_city: str
+    original_eta: datetime
+    revised_eta: datetime
+    estimated_delay_mins: int
+    vehicle_code: Optional[str] = None
+
+class AffectedRouteOut(BaseModel):
+    corridor_code: str
+    corridor_name: str
+    status: str
+    accessibility_status: str
+    accessibility_score: float
+    risk_level: str
+    factor_summary: Optional[str] = None
+    affected_vehicles_count: int
+    affected_deliveries_count: int
+    affected_vehicles: List[AffectedVehicleItem]
+    affected_deliveries: List[AffectedDeliveryItem]
+    recommended_detour: Optional[str] = None
+    last_updated: datetime
+
+class RerouteApprovalRequest(BaseModel):
+    notes: Optional[str] = None
+    approved_by: Optional[str] = None
+

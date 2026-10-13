@@ -196,24 +196,23 @@ def reroute_delivery(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
+    from app.models.models import Corridor
+    from app.services.rerouting_service import ReroutingService
+
     d = db.query(Delivery).filter(Delivery.id == delivery_id).first()
     if not d:
         raise HTTPException(status_code=404, detail="Delivery not found")
     
-    route = RoutingService.get_route(d.origin_city, d.destination_city, force_alternate=True)
-    d.active_route_path = json.dumps(route["waypoints"])
-    d.route_risk_category = "MEDIUM"
-    d.route_risk_score = 42.0
-    d.estimated_delay_mins = 35
-    d.revised_eta = d.original_eta + timedelta(minutes=35)
-    d.delay_reason = "Dynamic Corridor Reroute (Avoid Primary Obstruction)"
+    cor = db.query(Corridor).filter(
+        (Corridor.destination.ilike(f"%{d.destination_city}%")) |
+        (Corridor.corridor_code == "COR-NH27")
+    ).first()
+    if not cor:
+        cor = db.query(Corridor).first()
 
-    db.add(AuditLog(
-        user_email=current_user.email if hasattr(current_user, 'email') else "dispatcher@linkx8.in",
-        action="REROUTE_DELIVERY",
-        resource="Delivery",
-        details=f"Approved reroute for {d.delivery_code} to Alternate Route B"
-    ))
-    db.commit()
+    decision = ReroutingService.calculate_reroute_proposal(d, cor, db)
+    user_email = current_user.email if hasattr(current_user, 'email') else "dispatcher@linkx8.in"
+    ReroutingService.approve_route_decision(decision.id, user_email, db)
     db.refresh(d)
     return d
+

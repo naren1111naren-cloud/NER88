@@ -5,6 +5,7 @@ import React, {
   useCallback,
 } from 'react';
 
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   CloudRain,
   Wind,
@@ -29,6 +30,8 @@ import {
   Sunrise,
   Activity,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 import { API_BASE_URL } from '../services/api';
@@ -191,7 +194,7 @@ export const WeatherWidget = ({
     if (weatherCode >= 61 && weatherCode <= 67) {
       return (
         <CloudRain
-          className={`${className} text-blue-600`}
+          className={`${className} text-emerald-600`}
         />
       );
     }
@@ -207,7 +210,7 @@ export const WeatherWidget = ({
     if (weatherCode >= 80 && weatherCode <= 82) {
       return (
         <CloudRain
-          className={`${className} text-blue-700`}
+          className={`${className} text-emerald-700`}
         />
       );
     }
@@ -853,44 +856,44 @@ export const WeatherWidget = ({
       : [];
 
   return (
-    <div className="bg-white border border-[#D9DEE7] rounded-lg shadow-xs overflow-hidden">
+    <div className="bg-white border border-[#D5E4DB] rounded-xl shadow-xs overflow-hidden text-[#13261D]">
 
       {/* HEADER */}
-      <div className="p-4 border-b border-[#D9DEE7] bg-[#F8FAFC] flex flex-wrap items-center justify-between gap-3">
+      <div className="p-4 border-b border-[#D5E4DB] bg-[#F8FAFC] flex flex-wrap items-center justify-between gap-3">
 
         <div className="flex items-center gap-3">
 
-          <div className="w-9 h-9 rounded-lg bg-purple-100 border border-purple-200 flex items-center justify-center text-[#6D28D9] shrink-0">
+          <div className="w-10 h-10 rounded-lg bg-[#EAF7EE] border border-[#BBF7D0] flex items-center justify-center text-[#15803D] shrink-0 shadow-xs">
             <CloudRain className="w-5 h-5" />
           </div>
 
           <div>
             <div className="flex items-center gap-2 flex-wrap">
 
-              <h2 className="text-sm font-bold text-[#172033] uppercase tracking-wider">
-                WEATHER CONDITIONS & ACCESSIBILITY
+              <h2 className="text-sm font-bold text-[#0B3B24] tracking-wide uppercase">
+                METEOROLOGICAL & CORRIDOR WEATHER MONITOR
               </h2>
 
               <span
-                className={`px-2 py-0.5 rounded-md border text-xs font-bold uppercase tracking-wider flex items-center gap-1 ${isStale
+                className={`px-2 py-0.5 rounded border text-[11px] font-bold tracking-wider uppercase flex items-center gap-1.5 ${isStale
                   ? 'bg-amber-50 text-amber-800 border-amber-300'
-                  : 'bg-emerald-50 text-[#047857] border-emerald-300'
+                  : 'bg-emerald-50 text-emerald-800 border-emerald-300'
                   }`}
               >
                 <span
                   className={`w-2 h-2 rounded-full ${isStale
                     ? 'bg-amber-500'
-                    : 'bg-emerald-500 animate-pulse'
+                    : 'bg-emerald-600'
                     }`}
                 />
 
                 {isStale
-                  ? 'STALE DATA'
+                  ? 'STALE CACHED'
                   : 'LIVE OPEN-METEO'}
               </span>
 
               {lastUpdatedTime && (
-                <span className="text-xs text-[#667085] font-mono">
+                <span className="text-xs text-[#3E5649] font-mono">
                   Updated{' '}
                   {lastUpdatedTime.toLocaleTimeString(
                     [],
@@ -904,8 +907,8 @@ export const WeatherWidget = ({
 
             </div>
 
-            <p className="text-xs text-[#475467] mt-0.5 font-normal">
-              Current meteorological conditions and live impact on regional logistics corridors
+            <p className="text-xs text-[#3E5649] mt-0.5">
+              Live weather telemetry and logistics vulnerability indexing for Northeast India corridors.
             </p>
           </div>
         </div>
@@ -915,7 +918,7 @@ export const WeatherWidget = ({
 
           <div className="relative flex-1 lg:w-64">
 
-            <Search className="w-3.5 h-3.5 text-[#667085] absolute left-3 top-2.5 pointer-events-none" />
+            <Search className="w-3.5 h-3.5 text-[#3E5649] absolute left-3 top-2.5 pointer-events-none" />
 
             <input
               type="text"
@@ -926,11 +929,11 @@ export const WeatherWidget = ({
                 searchResults.length > 0 &&
                 setShowSearchDropdown(true)
               }
-              className="w-full pl-9 pr-7 py-1.5 bg-white border border-[#D9DEE7] rounded-md text-xs font-semibold text-[#172033] placeholder-[#667085] focus:outline-none focus:border-[#6D28D9]"
+              className="w-full pl-9 pr-7 py-1.5 bg-white border border-[#D5E4DB] rounded-lg text-xs font-semibold text-[#13261D] placeholder-[#627B6E] focus:outline-none focus:border-[#15803D] focus:ring-1 focus:ring-[#15803D]"
             />
 
             {isSearching && (
-              <RefreshCw className="w-3.5 h-3.5 text-[#6D28D9] animate-spin absolute right-2.5 top-2.5" />
+              <RefreshCw className="w-3.5 h-3.5 text-[#15803D] animate-spin absolute right-2.5 top-2.5" />
             )}
 
             {searchQuery &&
@@ -942,7 +945,7 @@ export const WeatherWidget = ({
                       false
                     );
                   }}
-                  className="text-[#667085] hover:text-[#172033] absolute right-2.5 top-2.5"
+                  className="text-[#627B6E] hover:text-[#13261D] absolute right-2.5 top-2.5"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -950,7 +953,7 @@ export const WeatherWidget = ({
 
             {showSearchDropdown &&
               searchResults.length > 0 && (
-                <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-[#D9DEE7] rounded-md shadow-lg z-50 max-h-56 overflow-y-auto divide-y divide-[#E2E8F0] text-xs">
+                <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-[#D5E4DB] rounded-lg shadow-lg z-50 max-h-56 overflow-y-auto divide-y divide-[#EEF5F1] text-xs">
 
                   {searchResults.map(
                     (item, index) => (
@@ -961,14 +964,14 @@ export const WeatherWidget = ({
                             item
                           )
                         }
-                        className="w-full px-3 py-2 text-left hover:bg-purple-50 flex items-center justify-between gap-2"
+                        className="w-full px-3 py-2 text-left hover:bg-[#F7FAF8] flex items-center justify-between gap-2"
                       >
                         <div>
-                          <div className="font-bold text-[#172033]">
+                          <div className="font-bold text-[#13261D]">
                             {item.name}
                           </div>
 
-                          <div className="text-xs text-[#475467]">
+                          <div className="text-xs text-[#3E5649]">
                             {[
                               item.admin2,
                               item.admin1,
@@ -979,7 +982,7 @@ export const WeatherWidget = ({
                           </div>
                         </div>
 
-                        <span className="text-xs font-mono text-[#667085]">
+                        <span className="text-xs font-mono text-[#3E5649]">
                           [
                           {getNumber(
                             item.latitude
@@ -1001,9 +1004,9 @@ export const WeatherWidget = ({
           <button
             onClick={handleUseMyLocation}
             disabled={loading}
-            className="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-md text-[#6D28D9] font-bold text-xs flex items-center gap-1.5 transition active:scale-95"
+            className="px-3 py-1.5 bg-[#EEF5F1] hover:bg-[#E2EFE7] border border-[#D5E4DB] rounded-lg text-[#0B3B24] font-bold text-xs flex items-center gap-1.5 transition active:scale-95"
           >
-            <Crosshair className="w-3.5 h-3.5" />
+            <Crosshair className="w-3.5 h-3.5 text-[#15803D]" />
             <span className="hidden sm:inline">
               My Location
             </span>
@@ -1020,12 +1023,12 @@ export const WeatherWidget = ({
             disabled={
               loading || isRefreshing
             }
-            className="p-1.5 bg-white border border-[#D9DEE7] rounded-md text-[#475467] hover:text-[#6D28D9] hover:bg-[#F8FAFC] transition"
+            className="p-1.5 bg-white border border-[#D5E4DB] rounded-lg text-[#3E5649] hover:text-[#15803D] hover:bg-[#F7FAF8] transition"
             title="Refresh Live Weather"
           >
             <RefreshCw
               className={`w-4 h-4 ${loading || isRefreshing
-                ? 'animate-spin text-[#6D28D9]'
+                ? 'animate-spin text-[#15803D]'
                 : ''
                 }`}
             />
@@ -1034,77 +1037,76 @@ export const WeatherWidget = ({
         </div>
       </div>
 
-      {/* NER HUBS */}
-      <div className="px-4 py-2 border-b border-[#D9DEE7] bg-[#F8FAFC] flex items-center gap-1.5 overflow-x-auto text-xs">
-
-        <span className="font-bold text-[#475467] shrink-0 mr-1 flex items-center gap-1 text-xs">
-          <MapPin className="w-3.5 h-3.5 text-[#6D28D9]" />
-          Strategic Hubs:
+      {/* NER HUBS: Framer Motion animated pills (no horizontal scrollbar) */}
+      <div className="px-4 py-2 border-b border-[#D5E4DB] bg-[#F8FAFC] flex flex-wrap items-center gap-1.5 text-xs">
+        <span className="font-bold text-[#3E5649] shrink-0 mr-1 flex items-center gap-1 text-xs">
+          <MapPin className="w-3.5 h-3.5 text-[#15803D]" />
+          Regional Strategic Hubs:
         </span>
 
-        {NER_PRESETS.map(
-          (preset) => {
-            const selected =
-              locationName.includes(
-                preset.name
-              );
-
-            return (
-              <button
-                key={preset.name}
-                onClick={() =>
-                  handlePresetSelect(
-                    preset
-                  )
-                }
-                className={`px-2.5 py-1 rounded-md font-bold text-xs shrink-0 transition ${selected
-                  ? 'bg-[#6D28D9] text-white shadow-xs'
-                  : 'bg-white border border-[#D9DEE7] text-[#172033] hover:border-purple-300'
-                  }`}
-              >
-                {preset.name}
-              </button>
-            );
-          }
-        )}
+        {NER_PRESETS.map((preset) => {
+          const selected = locationName.includes(preset.name);
+          return (
+            <motion.button
+              key={preset.name}
+              whileHover={{ y: -1 }}
+              whileTap={{ scale: 0.96 }}
+              onClick={() => handlePresetSelect(preset)}
+              className={`relative px-2.5 py-1 rounded-md font-bold text-xs shrink-0 transition cursor-pointer ${
+                selected
+                  ? 'bg-[#0B3B24] text-white shadow-xs'
+                  : 'bg-white border border-[#D5E4DB] text-[#13261D] hover:border-[#15803D]'
+              }`}
+            >
+              {preset.name}
+            </motion.button>
+          );
+        })}
       </div>
 
-      {/* TABS */}
-      <div className="flex border-b border-[#D9DEE7] px-4 bg-[#F8FAFC] text-xs overflow-x-auto">
-
+      {/* TABS: Framer Motion layoutId animated underline without horizontal scroll */}
+      <div className="flex flex-wrap border-b border-[#D5E4DB] px-4 bg-[#F8FAFC] text-xs">
         {[
           ['current', 'CURRENT CONDITIONS'],
           ['hourly', 'HOURLY FORECAST'],
           ['daily', '7-DAY FORECAST'],
           ['factors', 'RISK FACTORS'],
-        ].map(([key, label]) => (
-          <button
-            key={key}
-            onClick={() =>
-              setActiveTab(key)
-            }
-            className={`py-2.5 px-3 font-bold border-b-2 whitespace-nowrap text-xs transition ${activeTab === key
-              ? 'border-[#6D28D9] text-[#6D28D9] bg-white'
-              : 'border-transparent text-[#475467] hover:text-[#172033]'
+        ].map(([key, label]) => {
+          const isActive = activeTab === key;
+          return (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={`relative py-2.5 px-3 font-bold whitespace-nowrap text-xs transition cursor-pointer ${
+                isActive
+                  ? 'text-[#0B3B24] bg-white'
+                  : 'text-[#3E5649] hover:text-[#13261D]'
               }`}
-          >
-            {label}
-          </button>
-        ))}
-
+            >
+              <span className="relative z-10">{label}</span>
+              {isActive && (
+                <motion.div
+                  layoutId="activeWeatherTabUnderline"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#15803D] z-20"
+                  transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                />
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* LOADING */}
       {loading && !weatherData && (
-        <div className="p-10 text-center text-xs text-[#475467] flex flex-col items-center gap-3">
+        <div className="p-10 text-center text-xs text-[#3E5649] flex flex-col items-center gap-3">
 
-          <RefreshCw className="w-6 h-6 animate-spin text-[#6D28D9]" />
+          <RefreshCw className="w-6 h-6 animate-spin text-[#15803D]" />
 
-          <div className="font-bold text-sm text-[#172033]">
+          <div className="font-bold text-sm text-[#13261D]">
             Fetching live Open-Meteo weather data...
           </div>
 
-          <div className="text-xs text-[#667085] font-mono">
+          <div className="text-xs text-[#627B6E] font-mono">
             Coordinates: [
             {coords.lat.toFixed(4)},
             {' '}
@@ -1119,7 +1121,7 @@ export const WeatherWidget = ({
       {!loading &&
         error &&
         !weatherData && (
-          <div className="p-5 m-4 bg-rose-50 border border-rose-200 rounded-md text-xs text-rose-900 space-y-3">
+          <div className="p-5 m-4 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-900 space-y-3">
 
             <div className="flex items-center gap-2 font-bold text-sm text-rose-900">
               <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
@@ -1137,12 +1139,12 @@ export const WeatherWidget = ({
                 : String(error)}
             </p>
 
-            <p className="text-xs font-mono break-all text-[#667085]">
+            <p className="text-xs font-mono break-all text-[#627B6E]">
               Backend Endpoint: {API_BASE_URL}
             </p>
 
             {retryCountdown > 0 && (
-              <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-md text-amber-900 text-xs flex items-center justify-between gap-2">
+              <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 text-xs flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-600" />
                   <span>
@@ -1174,7 +1176,7 @@ export const WeatherWidget = ({
                   );
                 }}
                 disabled={loading}
-                className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white rounded-md font-bold text-xs flex items-center gap-1.5 shadow-xs transition active:scale-95"
+                className="px-3.5 py-1.5 bg-[#15803D] hover:bg-[#0B3B24] disabled:opacity-50 text-white rounded-lg font-bold text-xs flex items-center gap-1.5 shadow-xs transition active:scale-95"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
                 <span>{loading ? 'Connecting...' : 'Retry Weather Request'}</span>
@@ -1196,20 +1198,20 @@ export const WeatherWidget = ({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
 
                   {/* CURRENT WEATHER */}
-                  <div className="p-4 bg-[#F8FAFC] border border-[#D9DEE7] rounded-md space-y-3">
+                  <div className="p-4 bg-[#F8FAFC] border border-[#D5E4DB] rounded-lg space-y-3">
 
                     <div className="flex items-center justify-between gap-2">
 
-                      <span className="text-xs font-bold uppercase flex items-center gap-1.5 truncate text-[#172033]">
+                      <span className="text-xs font-bold uppercase flex items-center gap-1.5 truncate text-[#0B3B24]">
 
-                        <MapPin className="w-3.5 h-3.5 text-[#6D28D9]" />
+                        <MapPin className="w-3.5 h-3.5 text-[#15803D]" />
 
                         {current.location_name ||
                           locationName}
 
                       </span>
 
-                      <span className="text-xs text-[#667085] font-mono whitespace-nowrap">
+                      <span className="text-xs text-[#3E5649] font-mono whitespace-nowrap">
                         {getNumber(
                           current.latitude
                         )?.toFixed(2)}
@@ -1232,14 +1234,14 @@ export const WeatherWidget = ({
 
                       <div>
 
-                        <div className="text-3xl font-bold text-[#172033] tracking-tight">
+                        <div className="text-3xl font-bold text-[#13261D] tracking-tight">
                           {displayValue(
                             current.temperature_c,
                             '°C'
                           )}
                         </div>
 
-                        <div className="text-xs font-semibold text-[#6D28D9]">
+                        <div className="text-xs font-semibold text-[#15803D]">
                           {current.weather_condition ||
                             'Light Drizzle'}
                         </div>
@@ -1248,12 +1250,12 @@ export const WeatherWidget = ({
 
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 text-xs text-[#475467] pt-2 border-t border-[#E2E8F0]">
+                    <div className="grid grid-cols-2 gap-2 text-xs text-[#3E5649] pt-2 border-t border-[#D5E4DB]">
 
                       <div>
                         Feels like:
                         {' '}
-                        <strong className="text-[#172033] font-bold">
+                        <strong className="text-[#13261D] font-bold">
                           {displayValue(
                             current.feels_like_c ??
                             current.apparent_temperature_c,
@@ -1265,7 +1267,7 @@ export const WeatherWidget = ({
                       <div>
                         Humidity:
                         {' '}
-                        <strong className="text-[#172033] font-bold">
+                        <strong className="text-[#13261D] font-bold">
                           {displayValue(
                             current.relative_humidity_percent ??
                             current.humidity_percent,
@@ -1280,17 +1282,16 @@ export const WeatherWidget = ({
 
                   {/* RISK */}
                   <div
-                    className={`p-4 rounded-md border ${riskStyle.bg} ${riskStyle.border} space-y-3`}
+                    className={`p-4 rounded-lg border ${riskStyle.bg} ${riskStyle.border} space-y-3`}
                   >
 
                     <div className="flex items-center justify-between">
 
-                      <span className="text-xs font-bold uppercase flex items-center gap-1.5 text-[#172033]">
+                      <span className="text-xs font-bold uppercase flex items-center gap-1.5 text-[#13261D]">
 
                         <Zap className="w-3.5 h-3.5 text-amber-500" />
 
                         Weather Risk
-
                       </span>
 
                       <span
@@ -1303,13 +1304,13 @@ export const WeatherWidget = ({
 
                     <div className="flex items-baseline gap-2">
 
-                      <span className="text-3xl font-bold text-[#172033] tracking-tight">
+                      <span className="text-3xl font-bold text-[#13261D] tracking-tight">
                         {riskScore !== null
                           ? riskScore
                           : 'N/A'}
                       </span>
 
-                      <span className="text-xs text-[#667085] font-normal">
+                      <span className="text-xs text-[#627B6E] font-normal">
                         / 100
                       </span>
 
@@ -1334,7 +1335,7 @@ export const WeatherWidget = ({
                       </div>
                     )}
 
-                    <div className="text-xs text-[#475467]">
+                    <div className="text-xs text-[#3E5649]">
                       {riskScore < 40 
                         ? 'Current conditions are favorable for road transport.' 
                         : `Primary Threat: ${risk?.primary_threat || 'Mountain Weather Risk'}`}
@@ -1343,15 +1344,15 @@ export const WeatherWidget = ({
                   </div>
 
                   {/* PRECIPITATION / RAIN */}
-                  <div className="p-4 bg-[#F8FAFC] border border-[#D9DEE7] rounded-md space-y-3">
+                  <div className="p-4 bg-[#F8FAFC] border border-[#D5E4DB] rounded-lg space-y-3">
 
                     <div className="flex items-center justify-between">
 
-                      <span className="text-xs font-bold uppercase text-[#172033]">
+                      <span className="text-xs font-bold uppercase text-[#0B3B24]">
                         Rainfall
                       </span>
 
-                      <span className="text-xs font-mono text-[#1D4ED8] bg-blue-50 border border-blue-200 px-2 py-0.5 rounded font-bold">
+                      <span className="text-xs font-mono text-[#15803D] bg-[#EAF7EE] border border-[#BBF7D0] px-2 py-0.5 rounded font-bold">
                         LIVE
                       </span>
 
@@ -1359,7 +1360,7 @@ export const WeatherWidget = ({
 
                     <div className="flex items-baseline gap-2">
 
-                      <span className="text-3xl font-bold text-[#172033] tracking-tight">
+                      <span className="text-3xl font-bold text-[#13261D] tracking-tight">
                         {displayValue(
                           current.precipitation_mm,
                           ' mm'
@@ -1368,16 +1369,16 @@ export const WeatherWidget = ({
 
                     </div>
 
-                    <div className="text-xs text-[#475467]">
+                    <div className="text-xs text-[#3E5649]">
                       Reported precipitation rate across sector
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 text-xs text-[#475467] pt-2 border-t border-[#E2E8F0]">
+                    <div className="grid grid-cols-2 gap-2 text-xs text-[#3E5649] pt-2 border-t border-[#D5E4DB]">
 
                       <div>
                         Rain:
                         {' '}
-                        <strong className="text-[#172033] font-bold">
+                        <strong className="text-[#13261D] font-bold">
                           {displayValue(
                             current.rain_mm,
                             ' mm'
@@ -1388,7 +1389,7 @@ export const WeatherWidget = ({
                       <div>
                         Snow:
                         {' '}
-                        <strong className="text-[#172033] font-bold">
+                        <strong className="text-[#13261D] font-bold">
                           {displayValue(
                             current.snowfall_cm,
                             ' cm'
@@ -1406,7 +1407,7 @@ export const WeatherWidget = ({
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 text-xs">
 
                   <Metric
-                    icon={<Wind className="w-3.5 h-3.5 text-teal-600" />}
+                    icon={<Wind className="w-3.5 h-3.5 text-[#15803D]" />}
                     title="WIND"
                     value={displayValue(
                       current.wind_speed_kmh ??
@@ -1429,7 +1430,7 @@ export const WeatherWidget = ({
                   />
 
                   <Metric
-                    icon={<Eye className="w-3.5 h-3.5 text-blue-600" />}
+                    icon={<Eye className="w-3.5 h-3.5 text-[#0D9488]" />}
                     title="VISIBILITY"
                     value={displayValue(
                       current.visibility_km,
@@ -1439,7 +1440,7 @@ export const WeatherWidget = ({
                   />
 
                   <Metric
-                    icon={<Cloud className="w-3.5 h-3.5 text-slate-600" />}
+                    icon={<Cloud className="w-3.5 h-3.5 text-[#3E5649]" />}
                     title="CLOUD COVER"
                     value={displayValue(
                       current.cloud_cover_percent,
@@ -1449,7 +1450,7 @@ export const WeatherWidget = ({
                   />
 
                   <Metric
-                    icon={<Gauge className="w-3.5 h-3.5 text-[#6D28D9]" />}
+                    icon={<Gauge className="w-3.5 h-3.5 text-[#0B3B24]" />}
                     title="PRESSURE"
                     value={displayValue(
                       current.pressure_msl_hpa,
@@ -1477,25 +1478,38 @@ export const WeatherWidget = ({
 
                 </div>
 
-                {/* ADVISORY */}
-                <div className="p-3.5 bg-[#F8FAFC] border border-[#D9DEE7] rounded-md flex items-start gap-2.5">
-
-                  <Zap className="w-4 h-4 text-[#6D28D9] shrink-0 mt-0.5" />
-
-                  <div className="text-xs">
-
-                    <span className="font-bold text-[#172033] uppercase tracking-wider text-xs">
-                      LOGISTICS ADVISORY:
-                      {' '}
-                    </span>
-
-                    <span className="text-[#475467]">
-                      {risk?.logistics_impact ||
-                        'Low weather-related transport risk based on current conditions.'}
-                    </span>
-
+                {/* PRECAUTIONS (CRITICAL REQUIREMENT) */}
+                <div className="p-4 bg-amber-50/70 border border-amber-200 rounded-lg space-y-2">
+                  <div className="flex items-center gap-2 text-amber-900 font-bold text-xs uppercase tracking-wider">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                    OPERATIONAL PRECAUTIONS & ADVISORY
                   </div>
-
+                  <ul className="text-xs text-amber-950 space-y-1 pl-5 list-disc font-medium">
+                    {riskScore >= 60 ? (
+                      <>
+                        <li><strong>High Terrain Alert:</strong> Reduced visibility and slippery road surface expected along mountain corridors.</li>
+                        <li><strong>Route Advisory:</strong> Avoid vulnerable bypass routes and monitor real-time landslide warnings.</li>
+                        <li><strong>Logistics Operations:</strong> Mandate speed limits and inspect heavy vehicle traction before departure.</li>
+                      </>
+                    ) : riskScore >= 30 ? (
+                      <>
+                        <li><strong>Moderate Conditions:</strong> Rain expected along hill sections; maintain safe stopping distances.</li>
+                        <li><strong>Corridor Check:</strong> Monitor NH highway updates for localized waterlogging or minor delays.</li>
+                        <li><strong>Fleet Notice:</strong> Ensure GPS tracking is active on all dispatched consignments.</li>
+                      </>
+                    ) : (
+                      <>
+                        <li><strong>Clear Corridors:</strong> Road conditions favorable for standard logistics and transit operations.</li>
+                        <li><strong>Standard Routine:</strong> Regular freight schedules proceed without weather-induced delays.</li>
+                        <li><strong>Monitoring:</strong> Automatic 30-minute meteorological sweep active for downstream passes.</li>
+                      </>
+                    )}
+                  </ul>
+                  {risk?.logistics_impact && (
+                    <div className="pt-2 border-t border-amber-200/60 text-xs text-amber-900">
+                      <strong>Impact Summary:</strong> {risk.logistics_impact}
+                    </div>
+                  )}
                 </div>
 
               </div>
@@ -1506,41 +1520,69 @@ export const WeatherWidget = ({
               <div className="space-y-3">
 
                 <div className="flex items-center justify-between text-xs">
-
-                  <div className="font-bold text-sm text-[#172033] flex items-center gap-1.5">
-                    <Clock className="w-4 h-4 text-[#6D28D9]" />
-                    Next 24 Hours
+                  <div className="font-bold text-sm text-[#0B3B24] flex items-center gap-1.5">
+                    <Clock className="w-4 h-4 text-[#15803D]" />
+                    <span>Next 24 Hours Forecast</span>
                   </div>
 
-                  <span className="text-xs font-mono text-[#667085]">
-                    Open-Meteo Hourly
-                  </span>
-
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono text-[#3E5649] hidden sm:inline">
+                      Open-Meteo Hourly
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <motion.button
+                        type="button"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.92 }}
+                        onClick={() => {
+                          const el = document.getElementById('hourly-carousel-container');
+                          if (el) el.scrollBy({ left: -240, behavior: 'smooth' });
+                        }}
+                        className="p-1.5 rounded-md bg-white hover:bg-[#F6F8FA] border border-[#D5E4DB] text-[#3E5649] hover:text-[#0B3B24] shadow-2xs transition cursor-pointer"
+                        title="Previous Hours"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                      </motion.button>
+                      <motion.button
+                        type="button"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.92 }}
+                        onClick={() => {
+                          const el = document.getElementById('hourly-carousel-container');
+                          if (el) el.scrollBy({ left: 240, behavior: 'smooth' });
+                        }}
+                        className="p-1.5 rounded-md bg-white hover:bg-[#F6F8FA] border border-[#D5E4DB] text-[#3E5649] hover:text-[#0B3B24] shadow-2xs transition cursor-pointer"
+                        title="Next Hours"
+                      >
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </motion.button>
+                    </div>
+                  </div>
                 </div>
 
                 {hourly.length === 0 ? (
                   <EmptyState text="Hourly forecast data is unavailable." />
                 ) : (
-                  <div className="flex gap-2 overflow-x-auto pb-2">
+                  <div 
+                    id="hourly-carousel-container"
+                    className="flex gap-2 overflow-x-auto no-scrollbar pb-2 scroll-smooth"
+                  >
+                    {hourly.map((hour, index) => {
+                      const style = getRiskStyle(
+                        hour.hourly_risk_category,
+                        hour.hourly_risk_score
+                      );
 
-                    {hourly.map(
-                      (hour, index) => {
-                        const style =
-                          getRiskStyle(
-                            hour.hourly_risk_category,
-                            hour.hourly_risk_score
-                          );
+                      return (
+                        <motion.div
+                          key={hour.time || index}
+                          whileHover={{ y: -3, scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                          className={`p-3 rounded-lg border min-w-[110px] text-center space-y-1.5 shrink-0 shadow-2xs transition-colors cursor-pointer ${style.bg} ${style.border}`}
+                        >
 
-                        return (
-                          <div
-                            key={
-                              hour.time ||
-                              index
-                            }
-                            className={`p-3 rounded-md border min-w-[110px] text-center space-y-1.5 shrink-0 ${style.bg} ${style.border}`}
-                          >
-
-                            <div className="text-xs font-bold uppercase text-[#667085]">
+                            <div className="text-xs font-bold uppercase text-[#3E5649]">
                               {index === 0
                                 ? 'NOW'
                                 : formatTime(
@@ -1553,21 +1595,21 @@ export const WeatherWidget = ({
                               'w-6 h-6 mx-auto'
                             )}
 
-                            <div className="text-sm font-bold text-[#172033]">
+                            <div className="text-sm font-bold text-[#13261D]">
                               {displayValue(
                                 hour.temperature_c,
                                 '°C'
                               )}
                             </div>
 
-                            <div className="text-xs text-[#1D4ED8] font-bold">
+                            <div className="text-xs text-[#15803D] font-bold">
                               {displayValue(
                                 hour.precipitation_probability,
                                 '%'
                               )}
                             </div>
 
-                            <div className="text-xs text-[#475467]">
+                            <div className="text-xs text-[#3E5649]">
                               {displayValue(
                                 hour.precipitation_mm,
                                 ' mm'
@@ -1590,7 +1632,7 @@ export const WeatherWidget = ({
                                 </div>
                               )}
 
-                          </div>
+                          </motion.div>
                         );
                       }
                     )}
@@ -1607,12 +1649,12 @@ export const WeatherWidget = ({
 
                 <div className="flex items-center justify-between text-xs">
 
-                  <div className="font-bold text-sm text-[#172033] flex items-center gap-1.5">
+                  <div className="font-bold text-sm text-[#0B3B24] flex items-center gap-1.5">
                     <Sun className="w-4 h-4 text-amber-500" />
-                    7-Day Forecast
+                    7-Day Weather Outlook
                   </div>
 
-                  <span className="text-xs font-mono text-[#667085]">
+                  <span className="text-xs font-mono text-[#3E5649]">
                     Open-Meteo Daily
                   </span>
 
@@ -1630,11 +1672,11 @@ export const WeatherWidget = ({
                             day.date ||
                             index
                           }
-                          className="p-3 rounded-md border border-[#D9DEE7] bg-[#F8FAFC] space-y-2 text-center"
+                          className="p-3 rounded-lg border border-[#D5E4DB] bg-[#F8FAFC] space-y-2 text-center"
                         >
 
                           <div>
-                            <div className="font-bold text-xs text-[#172033]">
+                            <div className="font-bold text-xs text-[#13261D]">
                               {index === 0
                                 ? 'Today'
                                 : index === 1
@@ -1648,12 +1690,12 @@ export const WeatherWidget = ({
                             'w-7 h-7 mx-auto'
                           )}
 
-                          <div className="text-xs font-semibold text-[#475467]">
+                          <div className="text-xs font-semibold text-[#3E5649]">
                             {day.weather_condition ||
                               'N/A'}
                           </div>
 
-                          <div className="text-xs font-bold text-[#172033]">
+                          <div className="text-xs font-bold text-[#13261D]">
 
                             {displayValue(
                               day.temperature_max_c,
@@ -1669,11 +1711,11 @@ export const WeatherWidget = ({
 
                           </div>
 
-                          <div className="pt-1 border-t border-[#E2E8F0] text-xs text-[#475467] space-y-1">
+                          <div className="pt-1 border-t border-[#D5E4DB] text-xs text-[#3E5649] space-y-1">
 
                             <div className="flex justify-between">
                               <span>Rain:</span>
-                              <strong className="text-[#172033] font-bold">
+                              <strong className="text-[#13261D] font-bold">
                                 {displayValue(
                                   day.precipitation_probability_max,
                                   '%'
@@ -1683,7 +1725,7 @@ export const WeatherWidget = ({
 
                             <div className="flex justify-between">
                               <span>Rain Sum:</span>
-                              <strong className="text-[#172033] font-bold">
+                              <strong className="text-[#13261D] font-bold">
                                 {displayValue(
                                   day.precipitation_sum_mm,
                                   ' mm'
@@ -1693,7 +1735,7 @@ export const WeatherWidget = ({
 
                             <div className="flex justify-between">
                               <span>Max Wind:</span>
-                              <strong className="text-[#172033] font-bold">
+                              <strong className="text-[#13261D] font-bold">
                                 {displayValue(
                                   day.max_wind_speed_kmh,
                                   ' km/h'
@@ -1705,7 +1747,7 @@ export const WeatherWidget = ({
 
                           {day.sunrise &&
                             day.sunset && (
-                              <div className="pt-1 border-t border-[#E2E8F0] flex justify-between text-xs text-[#667085]">
+                              <div className="pt-1 border-t border-[#D5E4DB] flex justify-between text-xs text-[#3E5649]">
 
                                 <span className="flex items-center gap-0.5">
                                   <Sunrise className="w-3 h-3 text-amber-500" />
@@ -1738,8 +1780,8 @@ export const WeatherWidget = ({
             {activeTab === 'factors' && (
               <div className="space-y-3">
 
-                <div className="text-xs text-[#475467]">
-                  Weather risk calculated from live meteorological inputs.
+                <div className="text-xs text-[#3E5649]">
+                  Operational weather risk calculated from live meteorological inputs.
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
@@ -1798,13 +1840,13 @@ export const WeatherWidget = ({
             )}
 
             {/* SOURCE */}
-            <div className="pt-2 border-t border-[#E2E8F0] flex flex-wrap items-center justify-between gap-2 text-xs text-[#667085]">
+            <div className="pt-2 border-t border-[#D5E4DB] flex flex-wrap items-center justify-between gap-2 text-xs text-[#3E5649]">
 
               <div>
-                Weather Data Source:
+                Data Source:
                 {' '}
-                <span className="font-bold text-[#6D28D9]">
-                  Open-Meteo
+                <span className="font-bold text-[#0B3B24]">
+                  Open-Meteo High-Resolution Regional Model
                 </span>
               </div>
 
@@ -1833,18 +1875,18 @@ const Metric = ({
   value,
   subtitle,
 }) => (
-  <div className="p-3 bg-white border border-[#D9DEE7] rounded-md shadow-2xs space-y-1">
+  <div className="p-3 bg-white border border-[#D5E4DB] rounded-lg shadow-2xs space-y-1">
 
-    <div className="text-xs font-bold text-[#475467] uppercase flex items-center gap-1">
+    <div className="text-xs font-bold text-[#3E5649] uppercase flex items-center gap-1">
       {icon}
       {title}
     </div>
 
-    <div className="text-lg font-bold text-[#172033] tracking-tight">
+    <div className="text-lg font-bold text-[#13261D] tracking-tight">
       {value}
     </div>
 
-    <div className="text-xs text-[#667085]">
+    <div className="text-xs text-[#3E5649]">
       {subtitle}
     </div>
 
@@ -1858,15 +1900,15 @@ const RiskFactor = ({
   current,
   unit,
 }) => (
-  <div className="p-3.5 bg-[#F8FAFC] border border-[#D9DEE7] rounded-md space-y-1.5">
+  <div className="p-3.5 bg-[#F8FAFC] border border-[#D5E4DB] rounded-lg space-y-1.5">
 
-    <div className="flex justify-between items-center font-bold text-[#172033]">
+    <div className="flex justify-between items-center font-bold text-[#13261D]">
 
       <span>
         {title}
       </span>
 
-      <span className="font-mono text-[#6D28D9] font-bold">
+      <span className="font-mono text-[#15803D] font-bold">
         {getNumber(value) !== null
           ? `${value} / ${max}`
           : 'N/A'}
@@ -1874,10 +1916,10 @@ const RiskFactor = ({
 
     </div>
 
-    <div className="text-xs text-[#475467]">
+    <div className="text-xs text-[#3E5649]">
       Current:
       {' '}
-      <strong className="text-[#172033] font-bold">
+      <strong className="text-[#13261D] font-bold">
         {displayValue(
           current,
           unit
@@ -1891,7 +1933,7 @@ const RiskFactor = ({
 const EmptyState = ({
   text,
 }) => (
-  <div className="p-8 text-center border border-dashed border-[#D9DEE7] rounded-md text-xs text-[#475467]">
+  <div className="p-8 text-center border border-dashed border-[#D5E4DB] rounded-lg text-xs text-[#3E5649]">
     {text}
   </div>
 );

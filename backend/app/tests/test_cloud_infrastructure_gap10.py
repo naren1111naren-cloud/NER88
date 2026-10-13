@@ -46,7 +46,7 @@ def test_root_health_endpoint():
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "HEALTHY"
-    assert "LINK X8" in data["system"]
+    assert "NER88" in data["system"] or "LINK X8" in data["system"]
 
 def test_deep_observability_health_endpoint():
     """Verify deep GET /api/v1/health returns comprehensive system health."""
